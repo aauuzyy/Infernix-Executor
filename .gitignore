@@ -1,0 +1,61 @@
+# Exclude copyrighted Xeno files and extracted content
+xeno-v1.3.15-extracted/
+xeno-v1.3.15-source/
+xeno-source/
+Xeno-v1.3.15b.exe
+Xeno.lnk
+
+# Exclude extraction/analysis scripts (not needed for the final project)
+extract-electron.js
+extract_nsis.py
+extract_overlay.py
+extract_pe_resources.py
+extract_resources.py
+extract-*.js
+analyze_*.py
+find_asar.py
+patch_dll.py
+EXTRACTION_SUMMARY.md
+XENO_ARCHITECTURE_ANALYSIS.md
+
+# Node modules
+node_modules/
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+**/dist/
+**/build/
+*.node
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment files
+.env
+.env.local
+
+# OS files
+Thumbs.db
+desktop.ini
