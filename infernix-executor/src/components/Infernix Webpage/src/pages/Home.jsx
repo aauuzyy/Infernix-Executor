@@ -140,7 +140,7 @@ export default function Home() {
               <ArrowRight className="w-5 h-5" />
             </Link>
             <a
-              href="https://discord.gg/infernix"
+              href="https://discord.gg/NjRH3q7A"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-8 py-4 rounded-lg btn-secondary text-white font-semibold"

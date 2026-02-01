@@ -38,7 +38,7 @@ export default function Footer() {
             <h4 className="text-white font-semibold mb-4">Connect</h4>
             <div className="flex gap-3">
               <a
-                href="https://discord.gg/infernix"
+                href="https://discord.gg/NjRH3q7A"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-orange-500/20 transition-all"
@@ -48,7 +48,7 @@ export default function Footer() {
                 </svg>
               </a>
               <a
-                href="https://github.com/infernix"
+                href="https://github.com/aauuzyy/Xeno-x-Infernix"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center text-gray-500 hover:text-white hover:bg-orange-500/20 transition-all"

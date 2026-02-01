@@ -192,7 +192,7 @@ export default function Credits() {
             who create and maintain these amazing tools.
           </p>
           <a
-            href="https://github.com/infernix"
+            href="https://github.com/aauuzyy/Xeno-x-Infernix"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-white/5 border border-white/10 text-white text-sm hover:bg-white/10 transition-colors"

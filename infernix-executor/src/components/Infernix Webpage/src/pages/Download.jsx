@@ -31,7 +31,7 @@ const features = [
 
 const changelog = [
   {
-    version: '1.0.0',
+    version: '1.0.4',
     date: 'February 2026',
     type: 'release',
     changes: [
@@ -56,7 +56,7 @@ const changelog = [
 
 export default function Download() {
   const handleDownload = () => {
-    window.open('https://github.com/infernix/releases/latest', '_blank');
+    window.open('https://github.com/aauuzyy/Xeno-x-Infernix/releases/latest', '_blank');
   };
 
   return (
@@ -108,7 +108,7 @@ export default function Download() {
                 <Flame className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Infernix 1.0.0</h2>
+                <h2 className="text-2xl font-bold text-white">Infernix 1.0.4</h2>
                 <p className="text-gray-500 text-sm">February 2026 • Latest Release</p>
               </div>
             </div>
@@ -213,7 +213,7 @@ export default function Download() {
           <p className="text-gray-500 text-sm">
             Need help?{' '}
             <a
-              href="https://discord.gg/infernix"
+              href="https://discord.gg/NjRH3q7A"
               target="_blank"
               rel="noopener noreferrer"
               className="text-orange-400 hover:text-orange-300 inline-flex items-center gap-1"

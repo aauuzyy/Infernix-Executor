@@ -65,7 +65,7 @@ export default function Navbar() {
 
           {/* Discord Button */}
           <a
-            href="https://discord.gg/infernix"
+            href="https://discord.gg/NjRH3q7A"
             target="_blank"
             rel="noopener noreferrer"
             className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-[#5865F2] text-white text-sm font-medium hover:bg-[#4752C4] transition-colors"

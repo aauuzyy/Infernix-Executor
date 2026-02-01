@@ -174,7 +174,7 @@ export default function About() {
           <h2 className="text-2xl font-bold text-white mb-3">Join Our Community</h2>
           <p className="text-gray-400 mb-6">Connect with users, get support, and share scripts.</p>
           <a
-            href="https://discord.gg/infernix"
+            href="https://discord.gg/NjRH3q7A"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#5865F2] text-white font-medium hover:bg-[#4752C4] transition-colors"

@@ -94,7 +94,8 @@ client.on('interactionCreate', async (interaction) => {
       .setDescription('Get the latest version of Infernix Executor!')
       .addFields(
         { name: '🔗 Website', value: '[infernix.dev](https://infernix.dev/download)' },
-        { name: '📦 Version', value: 'v1.0.0 (Latest)', inline: true },
+        { name: '🔗 GitHub', value: '[Download](https://github.com/aauuzyy/Xeno-x-Infernix/releases/latest)' },
+        { name: '📦 Version', value: 'v1.0.4 (Latest)', inline: true },
         { name: '💻 Platform', value: 'Windows 10/11', inline: true },
       )
       .setFooter({ text: 'Free forever • Auto updates included' })
@@ -142,7 +143,7 @@ client.on('interactionCreate', async (interaction) => {
   if (commandName === 'changelog') {
     const embed = new EmbedBuilder()
       .setColor(0xFF6B35)
-      .setTitle('📋 Changelog - v1.0.0')
+      .setTitle('📋 Changelog - v1.0.4')
       .setDescription('**February 2026 - Initial Release**')
       .addFields(
         { name: '✨ New Features', value: 
