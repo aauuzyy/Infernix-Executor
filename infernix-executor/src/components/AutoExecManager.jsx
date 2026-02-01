@@ -30,7 +30,7 @@ function AutoExecManager({ tabs, onClose }) {
   };
 
   const selectAll = () => {
-    setSelectedTabs(tabs.map(t => t.id));
+    setSelectedTabs((tabs || []).map(t => t.id));
   };
 
   const deselectAll = () => {
@@ -95,7 +95,7 @@ function AutoExecManager({ tabs, onClose }) {
             </div>
             
             <div className="tabs-list">
-              {tabs.map(tab => (
+              {(tabs || []).map(tab => (
                 <div 
                   key={tab.id}
                   className={`tab-item ${selectedTabs.includes(tab.id) ? 'selected' : ''}`}
@@ -106,7 +106,7 @@ function AutoExecManager({ tabs, onClose }) {
                   </div>
                   <span className="tab-name">{tab.name}</span>
                   <span className="tab-preview">
-                    {tab.content.split('\n')[0].substring(0, 30)}...
+                    {(tab.content || '').split('\n')[0].substring(0, 30)}...
                   </span>
                 </div>
               ))}

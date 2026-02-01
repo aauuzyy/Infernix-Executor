@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { ThemeProvider } from './contexts/ThemeContext';
 import TitleBar from './components/TitleBar';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -218,22 +219,24 @@ function App() {
   };
 
   return (
-    <div className="app">
-      <TitleBar />
-      <div className="app-body">
-        <Sidebar 
-          activeView={activeView}
-          onViewChange={setActiveView}
-          collapsed={sidebarCollapsed}
-          onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-          clientCount={clients.length}
-        />
-        <main className="main-view">
-          {renderView()}
-        </main>
+    <ThemeProvider>
+      <div className="app">
+        <TitleBar />
+        <div className="app-body">
+          <Sidebar
+            activeView={activeView}
+            onViewChange={setActiveView}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+            clientCount={clients.length}
+          />
+          <main className="main-view">
+            {renderView()}
+          </main>
+        </div>
+        <Notification notifications={notifications} onRemove={removeNotification} />
       </div>
-      <Notification notifications={notifications} onRemove={removeNotification} />
-    </div>
+    </ThemeProvider>
   );
 }
 

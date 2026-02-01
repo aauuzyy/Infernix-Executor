@@ -1,4 +1,4 @@
-.notification-container {
+﻿.notification-container {
   position: fixed;
   bottom: 20px;
   right: 20px;
@@ -109,5 +109,6 @@
 /* Special styles for fire/ai notifications */
 .notification.fire,
 .notification.ai {
-  border-color: rgba(249, 115, 22, 0.3);
+  border-color: var(--border-fire);
 }
+

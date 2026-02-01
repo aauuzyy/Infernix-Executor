@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
-import { Zap, RefreshCw, Power, User, Gamepad2, Hash, Check, AlertCircle, Loader } from 'lucide-react';
+﻿import { useState, useEffect, useRef } from 'react';
+import { Zap, RefreshCw, Power, User, Gamepad2, Hash, Check, AlertCircle, Loader, CheckSquare, Square, XCircle } from 'lucide-react';
 import './ClientManager.css';
 
 function ClientManager({ clients, onNotify }) {
   const [gameInfo, setGameInfo] = useState({});
   const [avatars, setAvatars] = useState({});
   const [userIds, setUserIds] = useState({});
+  const [selectedPids, setSelectedPids] = useState(new Set());
   const gameInfoCache = useRef(new Map());
   const avatarCache = useRef(new Map());
   const userIdCache = useRef(new Map());
@@ -161,6 +162,65 @@ function ClientManager({ clients, onNotify }) {
       });
     }
   };
+  // Check if all clients are selected
+  const allSelected = clients.length > 0 && clients.every(c => {
+    const parsed = parseClient(c);
+    return selectedPids.has(parsed.pid);
+  });
+
+  // Selection functions
+  const toggleSelect = (pid) => {
+    setSelectedPids(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(pid)) {
+        newSet.delete(pid);
+      } else {
+        newSet.add(pid);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedPids(new Set());
+    } else {
+      const allPids = clients.map(c => {
+        const parsed = parseClient(c);
+        return parsed.pid;
+      });
+      setSelectedPids(new Set(allPids));
+    }
+  };
+
+  const killSelected = async () => {
+    if (selectedPids.size === 0) {
+      onNotify?.({
+        type: 'warning',
+        title: 'No Selection',
+        message: 'Select clients to kill first'
+      });
+      return;
+    }
+
+    try {
+      for (const pid of selectedPids) {
+        await window.electronAPI?.killProcess?.(parseInt(pid));
+      }
+      onNotify?.({
+        type: 'success',
+        title: 'Killed',
+        message: `Killed ${selectedPids.size} client(s)`
+      });
+      setSelectedPids(new Set());
+    } catch (e) {
+      onNotify?.({
+        type: 'error',
+        title: 'Kill Failed',
+        message: e.message
+      });
+    }
+  };
 
   const getStatusInfo = (status) => {
     switch (status) {
@@ -180,10 +240,20 @@ function ClientManager({ clients, onNotify }) {
       <div className="cm-header">
         <h2 className="cm-title">Client Manager</h2>
         <div className="cm-actions">
+          <button className="cm-btn secondary" onClick={toggleSelectAll} title="Select All">
+            {allSelected ? <CheckSquare size={14} /> : <Square size={14} />}
+            Select All
+          </button>
           <button className="cm-btn primary" onClick={handleAttach}>
             <Zap size={14} />
             Attach
           </button>
+          {selectedPids.size > 0 && (
+            <button className="cm-btn danger" onClick={killSelected}>
+              <XCircle size={14} />
+              Kill ({selectedPids.size})
+            </button>
+          )}
           <button className="cm-btn danger" onClick={handleKillAll}>
             <Power size={14} />
             Kill All
@@ -207,9 +277,17 @@ function ClientManager({ clients, onNotify }) {
             const StatusIcon = statusInfo.icon;
             const game = gameInfo[parsed.placeId];
             const avatar = avatars[parsed.username];
+            const isSelected = selectedPids.has(parsed.pid);
 
             return (
-              <div key={parsed.pid || idx} className="client-card">
+              <div 
+                key={parsed.pid || idx} 
+                className={`client-card ${isSelected ? 'selected' : ''}`}
+                onClick={() => toggleSelect(parsed.pid)}
+              >
+                <div className="client-select">
+                  {isSelected ? <CheckSquare size={18} /> : <Square size={18} />}
+                </div>
                 <div className="client-avatar">
                   {avatar ? (
                     <img src={avatar} alt="" />
@@ -258,3 +336,7 @@ function ClientManager({ clients, onNotify }) {
 }
 
 export default ClientManager;
+
+
+
+

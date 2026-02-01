@@ -19,14 +19,14 @@
 
 .autoexec-modal {
   background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
-  border: 1px solid rgba(255, 107, 53, 0.3);
+  border: 1px solid var(--accent-glow);
   border-radius: 16px;
   width: 90%;
   max-width: 900px;
   max-height: 80vh;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5),
-              0 0 40px rgba(255, 107, 53, 0.1);
+              0 0 40px var(--accent-glow);
   animation: slideUp 0.3s ease;
 }
 
@@ -41,7 +41,7 @@
   justify-content: space-between;
   padding: 20px 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, transparent 100%);
+  background: linear-gradient(135deg, var(--accent-glow) 0%, transparent 100%);
 }
 
 .autoexec-header h2 {
@@ -61,8 +61,8 @@
 }
 
 .close-btn:hover {
-  background: rgba(255, 107, 53, 0.2);
-  color: #ff6b35;
+  background: var(--accent-glow);
+  color: var(--accent);
 }
 
 .autoexec-content {
@@ -117,8 +117,8 @@
 }
 
 .mini-btn:hover {
-  background: rgba(255, 107, 53, 0.2);
-  color: #ff6b35;
+  background: var(--accent-glow);
+  color: var(--accent);
 }
 
 .tabs-list, .autoexec-list {
@@ -143,13 +143,13 @@
 }
 
 .tab-item:hover {
-  background: rgba(255, 107, 53, 0.1);
-  border-color: rgba(255, 107, 53, 0.2);
+  background: var(--accent-glow);
+  border-color: var(--accent-glow);
 }
 
 .tab-item.selected {
-  background: rgba(255, 107, 53, 0.15);
-  border-color: rgba(255, 107, 53, 0.4);
+  background: var(--accent-glow);
+  border-color: var(--accent-glow);
 }
 
 .tab-checkbox {
@@ -164,8 +164,8 @@
 }
 
 .tab-item.selected .tab-checkbox {
-  background: linear-gradient(135deg, #ff6b35, #f7931e);
-  border-color: #ff6b35;
+  background: var(--fire-gradient);
+  border-color: var(--accent);
   color: #fff;
 }
 
@@ -188,7 +188,7 @@
 .add-to-autoexec-btn {
   margin-top: 16px;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  background: var(--fire-gradient);
   border: none;
   border-radius: 10px;
   color: #fff;
@@ -203,7 +203,7 @@
 
 .add-to-autoexec-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(255, 107, 53, 0.4);
+  box-shadow: 0 8px 20px var(--accent-glow);
 }
 
 .add-to-autoexec-btn:disabled {
@@ -259,7 +259,7 @@
 .autoexec-info {
   margin-top: 16px;
   padding: 12px;
-  background: rgba(255, 107, 53, 0.1);
+  background: var(--accent-glow);
   border-radius: 10px;
   text-align: center;
 }
@@ -267,7 +267,7 @@
 .autoexec-info p {
   margin: 0;
   font-size: 0.85rem;
-  color: #f7931e;
+  color: var(--accent-hover);
 }
 
 /* Scrollbar */
@@ -283,6 +283,6 @@
 
 .tabs-list::-webkit-scrollbar-thumb,
 .autoexec-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 107, 53, 0.3);
+  background: var(--accent-glow);
   border-radius: 3px;
 }

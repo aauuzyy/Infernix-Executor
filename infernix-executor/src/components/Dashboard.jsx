@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Zap, Users, FileCode, Clock, Flame, Sparkles, History, XCircle } from 'lucide-react';
 import './Dashboard.css';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Changelog data
 const CHANGELOG = [
@@ -52,6 +53,7 @@ const CHANGELOG = [
 function Dashboard({ clients = [], executionCount = 0, scriptCount = 0, startTime, onViewChange }) {
   const [uptime, setUptime] = useState('0:00');
   const [killing, setKilling] = useState(false);
+  const { accentColor } = useTheme();
 
   // Update uptime every second
   useEffect(() => {
@@ -85,7 +87,7 @@ function Dashboard({ clients = [], executionCount = 0, scriptCount = 0, startTim
   };
 
   const stats = [
-    { icon: Flame, label: 'Executions', value: String(executionCount), color: '#f97316' },
+    { icon: Flame, label: 'Executions', value: String(executionCount), color: accentColor },
     { icon: Users, label: 'Active Clients', value: String(clients.length), color: '#22c55e' },
     { icon: FileCode, label: 'Scripts', value: String(scriptCount), color: '#fbbf24' },
     { icon: Clock, label: 'Uptime', value: uptime, color: '#ef4444' },

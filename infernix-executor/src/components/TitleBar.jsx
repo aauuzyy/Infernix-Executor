@@ -1,10 +1,16 @@
 import { Minus, Maximize2, X } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 import './TitleBar.css';
 
 function TitleBar() {
+  const { accentColor } = useTheme();
   const handleMinimize = () => window.electronAPI?.minimizeWindow();
   const handleMaximize = () => window.electronAPI?.maximizeWindow();
   const handleClose = () => window.electronAPI?.closeWindow();
+
+  // Derive darker and lighter shades from accent color
+  const accentDark = accentColor;
+  const accentLight = '#fbbf24';  // Keep ember/yellow for gradient ends
 
   return (
     <header className="titlebar">
@@ -13,8 +19,8 @@ function TitleBar() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
             <defs>
               <linearGradient id="fireGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#fbbf24"/>
-                <stop offset="50%" stopColor="#f97316"/>
+                <stop offset="0%" stopColor={accentLight}/>
+                <stop offset="50%" stopColor={accentColor}/>
                 <stop offset="100%" stopColor="#ef4444"/>
               </linearGradient>
             </defs>
@@ -25,9 +31,9 @@ function TitleBar() {
           <span className="logo-name">Infernix</span>
         </div>
       </div>
-      
+
       <div className="titlebar-drag" />
-      
+
       <div className="titlebar-controls">
         <button className="control-btn" onClick={handleMinimize}><Minus size={14} /></button>
         <button className="control-btn" onClick={handleMaximize}><Maximize2 size={12} /></button>

@@ -30,6 +30,11 @@ const team = [
 
 const specialThanks = [
   {
+    name: 'Crystxll',
+    reason: 'The one who convinced us to make Infernix! Without his inspiration, this project wouldn\'t exist.',
+    highlight: true,
+  },
+  {
     name: 'Xeno',
     reason: 'For the amazing API and execution backend that powers Infernix.',
     link: 'https://xeno.onl',
@@ -121,11 +126,41 @@ export default function Credits() {
               <Flame className="w-5 h-5 text-orange-400" />
             </div>
 
+            {/* CRYSTXLL - The Legend */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+              className="mb-6 p-6 rounded-2xl bg-gradient-to-br from-orange-600/30 via-yellow-500/20 to-red-600/30 border-2 border-orange-500 ring-2 ring-orange-500/50 shadow-[0_0_40px_rgba(249,115,22,0.4)] relative overflow-hidden"
+            >
+              {/* Animated glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/10 to-transparent animate-pulse" />
+              
+              <div className="relative flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 via-yellow-400 to-red-500 flex items-center justify-center flex-shrink-0 shadow-[0_0_20px_rgba(249,115,22,0.6)] animate-pulse">
+                  <Flame className="w-8 h-8 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-400 via-yellow-300 to-orange-500 bg-clip-text text-transparent">
+                      Crystxll
+                    </h3>
+                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-orange-500 to-yellow-500 text-black rounded-full">
+                      The Inspiration
+                    </span>
+                  </div>
+                  <p className="text-orange-100/90 text-sm leading-relaxed">
+                    The one who convinced us to make Infernix! Without his inspiration and belief in this project, none of this would exist. A true legend. 🔥
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+
             <div className="grid md:grid-cols-2 gap-3">
-              {specialThanks.map((thanks) => (
+              {specialThanks.filter(t => !t.highlight).map((thanks) => (
                 <div
                   key={thanks.name}
-                  className="p-4 rounded-xl bg-black/30 border border-white/5"
+                  className="p-4 rounded-xl border bg-black/30 border-white/5"
                 >
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center flex-shrink-0">

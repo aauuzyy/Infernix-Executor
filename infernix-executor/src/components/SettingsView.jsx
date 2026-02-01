@@ -1,49 +1,68 @@
 ﻿import { useState, useEffect } from 'react';
 import { 
   FolderOpen, History, Settings2, Wand2, XCircle, Bell, Shield, 
-  Download, RefreshCw, AlertTriangle, CheckCircle, Zap 
+  Download, RefreshCw, AlertTriangle, RotateCcw, CheckCircle, Zap, Palette, Sun, Moon
 } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
+import './SettingsView.css';
 import AutoExecManager from './AutoExecManager';
 import WorkspaceEditor from './WorkspaceEditor';
-import './SettingsView.css';
 
 // Changelog data
 const CHANGELOG = [
   {
+    version: '1.0.9',
+    date: 'February 2026',
+    changes: [
+      '?? Custom Themes - Dark, Light, Midnight modes',
+      '?? Accent Color Picker with presets',
+      '? RGB Color Shift animation',
+      '?? Fixed AutoExec to actually work on attach',
+      '? Auto-Attach with AutoExec support',
+    ]
+  },
+  {
     version: '1.0.8',
     date: 'February 2026',
     changes: [
-      '🔔 A/ANS - Admin Notification System (alerts when game owner/admin joins)',
-      '🔄 Automatic Update Checker - checks GitHub for new versions',
-      '🛡️ ABS - Anti Banwave System - monitors for banwaves',
-      '⚡ Emergency shutdown button for quick escape',
-      '🔧 New security settings panel',
+      '?? A/ANS - Admin Notification System (alerts when game owner/admin joins)',
+      '?? Automatic Update Checker - checks GitHub for new versions',
+      '??? ABS - Anti Banwave System - monitors for banwaves',
+      '? Emergency shutdown button for quick escape',
+      '?? New security settings panel',
     ]
   },
   {
     version: '1.0.7',
     date: 'February 2026',
     changes: [
-      '🔥 AutoExec now actually runs scripts on attach',
-      '🔥 Kill Roblox button in Dashboard and Settings',
-      '🔥 Fixed Workspace AI chat scrolling',
-      '🔥 Fixed chat message bubbles display',
-      '🔥 All settings buttons now functional',
+      '?? AutoExec now actually runs scripts on attach',
+      '?? Kill Roblox button in Dashboard and Settings',
+      '?? Fixed Workspace AI chat scrolling',
+      '?? Fixed chat message bubbles display',
+      '?? All settings buttons now functional',
     ]
   },
   {
     version: '1.0.6',
     date: 'February 2026',
     changes: [
-      '✨ AutoExec Manager - Select tabs and add to autoexec',
-      '✨ Workspace Script Editor with AI assistance',
-      '🤖 AI Assistant now helps EDIT scripts',
-      '🛠️ Script Tools: Loop, Function, Event, GUI, ESP templates',
+      '? AutoExec Manager - Select tabs and add to autoexec',
+      '? Workspace Script Editor with AI assistance',
+      '?? AI Assistant now helps EDIT scripts',
+      '??? Script Tools: Loop, Function, Event, GUI, ESP templates',
     ]
   },
 ];
 
 function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
+  const { 
+    themeMode, setThemeMode, 
+    accentColor, setAccentColor, 
+    colorShift, setColorShift,
+    accentPresets 
+  } = useTheme();
+  
   const [settings, setSettings] = useState({
     topmost: false,
     autoAttach: true,
@@ -54,6 +73,7 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
     absEnabled: true,
     absAutoShutdown: false,
     autoCheckUpdates: true,
+    debugConsole: false,
     theme: 'dark',
   });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -63,6 +83,7 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
   const [updateInfo, setUpdateInfo] = useState(null);
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const [banwaveStatus, setBanwaveStatus] = useState(null);
+  const [checkingBanwave, setCheckingBanwave] = useState(false);
   const [currentVersion, setCurrentVersion] = useState('1.0.8');
 
   // Load saved settings on mount
@@ -153,11 +174,14 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
   };
 
   const checkBanwaveStatus = async () => {
+    setCheckingBanwave(true);
     try {
       const status = await window.electronAPI?.checkBanwave?.();
       setBanwaveStatus(status);
     } catch (e) {
       console.error('Failed to check banwave:', e);
+    } finally {
+      setTimeout(() => setCheckingBanwave(false), 500);
     }
   };
 
@@ -173,6 +197,21 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
       alert('A/ANS activated! You will be notified when admins join.');
     } catch (e) {
       console.error('Failed to enable ANS:', e);
+    }
+  };
+
+  const handleResetSettings = async () => {
+    if (confirm('Reset all settings to defaults? This will restart the app.')) {
+      await window.electronAPI?.resetSettings?.();
+      window.electronAPI?.restartApp?.();
+    }
+  };
+
+  const handleToggleDebugConsole = async () => {
+    const newValue = !settings.debugConsole;
+    await toggleSetting('debugConsole');
+    if (confirm('Debug console setting changed. Restart now to apply?')) {
+      window.electronAPI?.restartApp?.();
     }
   };
 
@@ -205,7 +244,7 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
         <div className="banwave-alert">
           <AlertTriangle size={18} />
           <div>
-            <strong>⚠️ BANWAVE DETECTED!</strong>
+            <strong>?? BANWAVE DETECTED!</strong>
             <span>{banwaveStatus.message || 'Exercise extreme caution!'}</span>
           </div>
           <button className="emergency-btn" onClick={handleEmergencyShutdown}>
@@ -264,6 +303,81 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
           <button
             className={getToggleClass(settings.closeRoblox)}
             onClick={() => toggleSetting('closeRoblox')}
+          >
+            <span className="toggle-knob" />
+          </button>
+        </div>
+      </div>
+
+      {/* Theme Section */}
+      <div className="settings-section">
+        <h3 className="section-title">Appearance</h3>
+
+        <div className="setting-item">
+          <div className="setting-info">
+            <span className="setting-label">Theme Mode</span>
+            <span className="setting-desc">Choose your preferred theme</span>
+          </div>
+          <div className="theme-buttons">
+            <button
+              className={`theme-btn ${themeMode === 'dark' ? 'active' : ''}`}
+              onClick={() => setThemeMode('dark')}
+            >
+              <Moon size={14} />
+              Dark
+            </button>
+            <button
+              className={`theme-btn ${themeMode === 'light' ? 'active' : ''}`}
+              onClick={() => setThemeMode('light')}
+            >
+              <Sun size={14} />
+              Light
+            </button>
+            <button
+              className={`theme-btn ${themeMode === 'midnight' ? 'active' : ''}`}
+              onClick={() => setThemeMode('midnight')}
+            >
+              <Moon size={14} />
+              Midnight
+            </button>
+          </div>
+        </div>
+
+        <div className="setting-item">
+          <div className="setting-info">
+            <span className="setting-label">Accent Color</span>
+            <span className="setting-desc">Customize the accent color</span>
+          </div>
+          <div className="color-picker-row">
+            <input
+              type="color"
+              value={accentColor}
+              onChange={(e) => setAccentColor(e.target.value)}
+              className="color-input"
+            />
+          </div>
+        </div>
+
+        <div className="color-presets">
+          {accentPresets.map((preset) => (
+            <button
+              key={preset.name}
+              className={`color-preset ${accentColor === preset.color ? 'active' : ''}`}
+              style={{ backgroundColor: preset.color }}
+              onClick={() => setAccentColor(preset.color)}
+              title={preset.name}
+            />
+          ))}
+        </div>
+
+        <div className="setting-item">
+          <div className="setting-info">
+            <span className="setting-label">RGB Color Shift</span>
+            <span className="setting-desc">Animate through colors continuously</span>
+          </div>
+          <button
+            className={getToggleClass(colorShift)}
+            onClick={() => setColorShift(!colorShift)}
           >
             <span className="toggle-knob" />
           </button>
@@ -341,16 +455,17 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
           <div className="setting-info">
             <span className="setting-label">Banwave Status</span>
             <span className="setting-desc">
-              {banwaveStatus?.active ? '⚠️ ACTIVE - BE CAREFUL!' : '✓ All Clear'}
+              {banwaveStatus?.active ? '?? ACTIVE - BE CAREFUL!' : '? All Clear'}
             </span>
           </div>
           <button 
             className="folder-btn secondary" 
             onClick={checkBanwaveStatus}
+            disabled={checkingBanwave}
             style={{ flex: 'none', minWidth: 'auto', padding: '6px 12px' }}
           >
-            <RefreshCw size={12} />
-            Refresh
+            <RefreshCw size={12} className={checkingBanwave ? 'spinning' : ''} />
+            {checkingBanwave ? 'Checking...' : 'Refresh'}
           </button>
         </div>
       </div>
@@ -401,26 +516,30 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
         </div>
       </div>
 
+      
       <div className="settings-section">
-        <h3 className="section-title">
-          <History size={14} />
-          Changelog
-        </h3>
-        {CHANGELOG.map((release, i) => (
-          <div key={i} className="changelog-card">
-            <div className="changelog-header">
-              <span className="version-badge">v{release.version}</span>
-              <span className="release-date">{release.date}</span>
-            </div>
-            <ul className="changelog-list">
-              {release.changes.map((change, j) => (
-                <li key={j}>{change}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
+        <h3 className="section-title">Developer</h3>
 
+        <div className="setting-item">
+          <div className="setting-info">
+            <span className="setting-label">Debug Console</span>
+            <span className="setting-desc">Open DevTools with the app (requires restart)</span>
+          </div>
+          <button
+            className={getToggleClass(settings.debugConsole)}
+            onClick={handleToggleDebugConsole}
+          >
+            <span className="toggle-knob" />
+          </button>
+        </div>
+
+        <div className="folders-row" style={{ marginTop: '12px' }}>
+          <button className="folder-btn danger" onClick={handleResetSettings}>
+            <RotateCcw size={14} />
+            Reset All Settings
+          </button>
+        </div>
+      </div>
       <div className="settings-section">
         <h3 className="section-title">About</h3>
         <div className="about-info">
@@ -448,3 +567,9 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
 }
 
 export default SettingsView;
+
+
+
+
+
+

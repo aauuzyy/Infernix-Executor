@@ -215,7 +215,7 @@
 .form-group textarea:focus {
   outline: none;
   border-color: var(--flame);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .form-group input::placeholder,
@@ -256,7 +256,7 @@
 
 .script-item.selected {
   border-color: var(--flame);
-  background: rgba(255, 107, 53, 0.1);
+  background: var(--accent-glow);
 }
 
 .script-icon {

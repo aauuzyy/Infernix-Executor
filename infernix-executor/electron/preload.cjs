@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+﻿const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Window controls
@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   execute: (script, clients) => ipcRenderer.invoke('executor-execute', { script, clients }),
   getClients: () => ipcRenderer.invoke('executor-get-clients'),
   killRoblox: () => ipcRenderer.invoke('executor-kill-roblox'),
+  killProcess: (pid) => ipcRenderer.invoke('kill-process', pid),
   getVersion: () => ipcRenderer.invoke('executor-version'),
 
   // Roblox API Proxy (to avoid CORS)
@@ -44,6 +45,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Settings persistence
   saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
   loadSettings: () => ipcRenderer.invoke('load-settings'),
+  resetSettings: () => ipcRenderer.invoke('reset-settings'),
+  restartApp: () => ipcRenderer.invoke('restart-app'),
 
   // Tabs persistence
   saveTabs: (tabs) => ipcRenderer.invoke('save-tabs', tabs),

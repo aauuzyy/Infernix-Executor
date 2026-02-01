@@ -13,10 +13,10 @@
   --accent-secondary: #ef4444;
   --accent-glow: rgba(249, 115, 22, 0.15);
   --accent-hover: #ea580c;
-  --fire-gradient: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-  --fire-gradient-text: linear-gradient(90deg, #fbbf24, #f97316);
+  --fire-gradient: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  --fire-gradient-text: linear-gradient(90deg, #fbbf24, var(--accent));
   --ember: #fbbf24;
-  --flame: #f97316;
+  --flame: var(--accent);
   --blaze: #ef4444;
   --text-primary: #ffffff;
   --text-secondary: #999999;

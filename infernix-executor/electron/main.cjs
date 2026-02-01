@@ -197,6 +197,17 @@ async function createWindow() {
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
+
+    // Check if debug console is enabled
+    try {
+      const dirs = ensureUserDirs();
+      if (dirs && fs.existsSync(dirs.settingsFile)) {
+        const settings = JSON.parse(fs.readFileSync(dirs.settingsFile, 'utf-8'));
+        if (settings.debugConsole) {
+          mainWindow.webContents.openDevTools({ mode: 'detach' });
+        }
+      }
+    } catch {}
   });
 
   mainWindow.on('closed', () => {
@@ -468,11 +479,66 @@ app.whenReady().then(() => {
             };
           }
         });
-        
+
         mainWindow.webContents.send('executor-clients', mergedClients);
       }
     } catch (e) {}
   }, 200);
+
+  // Auto-attach polling - check for unattached clients and attach them
+  let lastKnownPids = new Set();
+  setInterval(async () => {
+    try {
+      // Check if autoAttach is enabled in settings
+      const dirs = ensureUserDirs();
+      if (!dirs) return;
+      
+      let settings = {};
+      try {
+        if (fs.existsSync(dirs.settingsFile)) {
+          settings = JSON.parse(fs.readFileSync(dirs.settingsFile, 'utf-8'));
+        }
+      } catch {}
+      
+      if (!settings.autoAttach) return;
+      
+      if (executorAddon && typeof executorAddon.getClients === 'function') {
+        const clientsJson = executorAddon.getClients();
+        const clients = JSON.parse(clientsJson || '[]');
+        
+        // Find clients that are not attached (status !== 3) and are new
+        const unattached = clients.filter(c => {
+          const status = Array.isArray(c) ? c[3] : c.status;
+          const pid = Array.isArray(c) ? c[0] : c.pid;
+          return status !== 3 && !lastKnownPids.has(pid);
+        });
+        
+        // Update known PIDs
+        clients.forEach(c => {
+          const pid = Array.isArray(c) ? c[0] : c.pid;
+          lastKnownPids.add(pid);
+        });
+        
+        // If there are new unattached clients, auto-attach
+        if (unattached.length > 0 && typeof executorAddon.attach === 'function') {
+          console.log('[Infernix] Auto-attaching to ' + unattached.length + ' new client(s)...');
+          executorAddon.attach();
+          
+          // Wait for attach, then run autoexec
+          setTimeout(async () => {
+            await executeNotificationKiller();
+            
+            // Run autoexec if enabled
+            setTimeout(async () => {
+              await runAutoExecScripts();
+            }, 1500);
+          }, 1000);
+        }
+      }
+    } catch (e) {
+      console.error('[Infernix] Auto-attach error:', e.message);
+    }
+  }, 2000);
 });
 
 // Script to completely disable Xeno notifications
@@ -480,7 +546,7 @@ const KILL_XENO_NOTIFICATIONS = `
 -- Kill all Xeno notifications completely
 local function killXenoNotifications()
     local coreGui = game:GetService("CoreGui")
-    
+
     -- Function to destroy Xeno GUI elements
     local function destroyXeno(obj)
         if obj.Name and (obj.Name:find("Xeno") or obj.Name:find("xeno") or obj.Name:find("XENO")) then
@@ -822,6 +888,19 @@ ipcMain.handle('executor-kill-roblox', async () => {
   }
 });
 
+// Kill specific process by PID
+ipcMain.handle('kill-process', async (event, pid) => {
+  try {
+    return new Promise((resolve) => {
+      exec(`taskkill /F /PID ${pid}`, (error) => {
+        resolve({ ok: !error, pid });
+      });
+    });
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
 ipcMain.handle('executor-version', async () => {
   if (!executorAddon) return 'UI Only';
   try {
@@ -985,6 +1064,28 @@ ipcMain.handle('load-settings', async () => {
   } catch (e) {
     return null;
   }
+});
+
+
+// Reset settings to defaults
+ipcMain.handle('reset-settings', async () => {
+  const dirs = ensureUserDirs();
+  if (!dirs) return { ok: false };
+
+  try {
+    if (fs.existsSync(dirs.settingsFile)) {
+      fs.unlinkSync(dirs.settingsFile);
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+// Restart the app
+ipcMain.handle('restart-app', () => {
+  app.relaunch();
+  app.exit(0);
 });
 
 // Save tabs state
@@ -1232,7 +1333,7 @@ ipcMain.handle('remove-from-autoexec', async (event, scriptName) => {
 // ==========================================
 
 // Current version for update checking
-const CURRENT_VERSION = '1.0.8';
+const CURRENT_VERSION = '1.0.9';
 const GITHUB_REPO = 'aauuzyy/Xeno-x-Infernix';
 
 // A/ANS - Admin/Owner Notification System Lua Script
@@ -1319,7 +1420,7 @@ local function checkIfAdmin(player)
     
     -- Also show in-game notification
     game:GetService("StarterGui"):SetCore("SendNotification", {
-        Title = "⚠️ ADMIN ALERT",
+        Title = "?? ADMIN ALERT",
         Text = adminType .. " joined: " .. player.DisplayName,
         Duration = 10,
         Icon = "rbxassetid://6031071053"

@@ -136,7 +136,7 @@
 
 .folder-btn:hover {
   border-color: var(--flame);
-  background: rgba(255, 107, 53, 0.1);
+  background: var(--accent-glow);
   color: var(--flame);
 }
 
@@ -246,5 +246,142 @@
 .folder-btn.danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Theme Controls */
+.theme-buttons {
+  display: flex;
+  gap: 6px;
+}
+
+.theme-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.theme-btn:hover {
+  border-color: var(--flame);
+  color: var(--text-primary);
+}
+
+.theme-btn.active {
+  background: var(--fire-gradient);
+  border-color: var(--flame);
+  color: white;
+}
+
+/* Color Picker */
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-input {
+  width: 40px;
+  height: 32px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  padding: 2px;
+}
+
+.color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 4px;
+}
+
+/* Color Presets */
+.color-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px 12px;
+}
+
+.color-preset {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.color-preset:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.color-preset.active {
+  border-color: white;
+  transform: scale(1.1);
+  box-shadow: 0 0 0 2px var(--bg-primary), 0 0 0 4px currentColor;
+}
+
+/* Appearance Section - No border */
+.settings-section.appearance-section .setting-item {
+  border: none;
+  background: transparent;
+  padding: 12px 0;
+}
+
+.settings-section.appearance-section .setting-item:hover {
+  border-color: transparent;
+}
+
+/* Toggle with accent glow */
+.toggle.active {
+  background: var(--flame);
+  border-color: var(--flame);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+/* Accent glow for buttons */
+.folder-btn:hover,
+.theme-btn:hover {
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.theme-btn.active {
+  box-shadow: 0 2px 12px var(--accent-glow);
+}
+
+/* Spinning animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* Color picker popup theming */
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 2px;
+  background: var(--bg-secondary);
+}
+
+/* Override browser color picker panel */
+::-webkit-color-swatch {
+  border-radius: 4px;
+  border: 1px solid var(--border);
 }
 
