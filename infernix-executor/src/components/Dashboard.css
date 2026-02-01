@@ -241,3 +241,26 @@
   color: var(--text-secondary);
   line-height: 1.5;
 }
+
+/* Danger button for Kill Roblox */
+.action-btn.danger {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.action-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+}
+
+.action-btn.danger.killing {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.action-btn.danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

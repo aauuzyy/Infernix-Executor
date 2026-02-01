@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+﻿const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -219,7 +219,12 @@ ipcMain.on('window-maximize', () => {
   }
 });
 
-ipcMain.on('window-close', () => {
+ipcMain.on('window-close', async () => {
+  // Kill Xeno notifications before closing
+  try {
+    await executeNotificationKiller();
+    console.log('Killed Xeno notifications on close');
+  } catch (e) {}
   if (mainWindow) mainWindow.close();
 });
 
@@ -622,19 +627,92 @@ const fetchClientGameInfo = async () => {
   });
 };
 
+// Function to run all autoexec scripts
+const runAutoExecScripts = async () => {
+  const dirs = ensureUserDirs();
+  if (!dirs) return;
+
+  try {
+    // Check if autoExecute is enabled in settings
+    let settings = {};
+    try {
+      if (fs.existsSync(dirs.settingsFile)) {
+        settings = JSON.parse(fs.readFileSync(dirs.settingsFile, 'utf-8'));
+      }
+    } catch {}
+
+    if (!settings.autoExecute) {
+      console.log('[Infernix] AutoExec disabled in settings');
+      return;
+    }
+
+    const files = fs.readdirSync(dirs.autoexecDir);
+    const scripts = files.filter(f => f.endsWith('.lua') || f.endsWith('.txt'));
+
+    if (scripts.length === 0) {
+      console.log('[Infernix] No autoexec scripts found');
+      return;
+    }
+
+    console.log('[Infernix] Running ' + scripts.length + ' autoexec scripts...');
+
+    for (const scriptFile of scripts) {
+      const scriptPath = path.join(dirs.autoexecDir, scriptFile);
+      try {
+        const scriptContent = fs.readFileSync(scriptPath, 'utf-8');
+        
+        // Execute via HTTP to Xeno's local server
+        await new Promise((resolve) => {
+          const postData = scriptContent;
+          const options = {
+            hostname: 'localhost',
+            port: 3110,
+            path: '/o',
+            method: 'POST',
+            headers: {
+              'Content-Type': 'text/plain',
+              'Content-Length': Buffer.byteLength(postData)
+            }
+          };
+
+          const req = http.request(options, (res) => {
+            res.on('data', () => {});
+            res.on('end', () => resolve(true));
+          });
+          req.on('error', () => resolve(false));
+          req.setTimeout(5000, () => { req.destroy(); resolve(false); });
+          req.write(postData);
+          req.end();
+        });
+
+        console.log('[Infernix] Executed autoexec: ' + scriptFile);
+      } catch (e) {
+        console.error('[Infernix] Failed to execute autoexec: ' + scriptFile);
+      }
+    }
+  } catch (e) {
+    console.error('[Infernix] AutoExec error:', e.message);
+  }
+};
+
 // Executor IPC Handlers
 ipcMain.handle('executor-attach', async () => {
   if (!executorAddon) return { ok: false, error: 'No addon loaded' };
   try {
     if (typeof executorAddon.attach === 'function') {
       executorAddon.attach();
-      
-      // Wait a moment for Xeno to fully attach, then kill its notifications
+
+      // Wait a moment for Xeno to fully attach, then kill notifications and run autoexec
       setTimeout(async () => {
         await executeNotificationKiller();
         console.log('Xeno notifications disabled');
+        
+        // Run autoexec scripts after a short delay
+        setTimeout(async () => {
+          await runAutoExecScripts();
+        }, 1000);
       }, 500);
-      
+
       return { ok: true };
     }
     return { ok: false, error: 'Attach not available' };
@@ -1096,6 +1174,57 @@ ipcMain.handle('fetch-client-details', async () => {
     req.on('timeout', () => { req.destroy(); resolve([]); });
     req.end();
   });
+});
+
+
+// AutoExec Management
+ipcMain.handle('get-autoexec-scripts', async () => {
+  const dirs = ensureUserDirs();
+  if (!dirs) return [];
+
+  try {
+    const files = fs.readdirSync(dirs.autoexecDir);
+    return files
+      .filter(f => f.endsWith('.lua') || f.endsWith('.txt'))
+      .map(f => ({
+        name: f,
+        path: path.join(dirs.autoexecDir, f)
+      }));
+  } catch (e) {
+    return [];
+  }
+});
+
+ipcMain.handle('add-to-autoexec', async (event, { name, content }) => {
+  const dirs = ensureUserDirs();
+  if (!dirs) return { ok: false, error: 'Failed to access directories' };
+
+  try {
+    // Create safe filename
+    const safeName = name.replace(/[^a-zA-Z0-9_\-\s]/g, '').trim() || 'Script';
+    const fileName = safeName.endsWith('.lua') ? safeName : `${safeName}.lua`;
+    const filePath = path.join(dirs.autoexecDir, fileName);
+
+    fs.writeFileSync(filePath, content, 'utf-8');
+    return { ok: true, path: filePath };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('remove-from-autoexec', async (event, scriptName) => {
+  const dirs = ensureUserDirs();
+  if (!dirs) return { ok: false };
+
+  try {
+    const filePath = path.join(dirs.autoexecDir, scriptName);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
 });
 
 app.on('window-all-closed', () => {

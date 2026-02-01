@@ -184,7 +184,13 @@ function App() {
       case 'clients':
         return <ClientManager clients={clients} onNotify={addNotification} />;
       case 'settings':
-        return <SettingsView />;
+        return (
+          <SettingsView 
+            tabs={tabs} 
+            onNewTab={handleNewTab}
+            onSwitchToExecutor={() => setActiveView('executor')}
+          />
+        );
       case 'assistant':
         return (
           <Assistant 

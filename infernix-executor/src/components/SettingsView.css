@@ -213,3 +213,37 @@
   font-size: 10px;
   margin-top: 2px;
 }
+
+/* New folder button styles */
+.folder-btn.secondary {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #888;
+}
+
+.folder-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ccc;
+}
+
+.folder-btn svg {
+  flex-shrink: 0;
+}
+
+/* Danger button for Kill Roblox */
+.folder-btn.danger {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #ef4444 !important;
+}
+
+.folder-btn.danger:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  color: #f87171 !important;
+}
+
+.folder-btn.danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

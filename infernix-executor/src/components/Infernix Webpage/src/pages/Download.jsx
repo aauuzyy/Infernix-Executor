@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
-import { 
-  Download as DownloadIcon, 
-  ArrowRight, 
-  Flame, 
-  Users, 
-  Zap, 
+import {
+  Download as DownloadIcon,
+  ArrowRight,
+  Flame,
+  Users,
+  Zap,
   Code2,
   RefreshCw,
   CheckCircle2,
@@ -31,6 +31,32 @@ const features = [
 
 const changelog = [
   {
+    version: '1.0.7',
+    date: 'February 2026',
+    type: 'release',
+    changes: [
+      'AutoExec now runs scripts on attach',
+      'Kill Roblox button in Dashboard and Settings',
+      'Fixed Workspace AI chat scrolling',
+      'Fixed chat message bubbles display',
+      'All settings buttons now functional',
+    ],
+  },
+  {
+    version: '1.0.6',
+    date: 'February 2026',
+    type: 'release',
+    changes: [
+      'NEW: AutoExec Manager - Select tabs and add to autoexec',
+      'NEW: Workspace Script Editor with AI assistance',
+      'AI Assistant now helps EDIT scripts, not rewrite',
+      'Script Tools: Loop, Function, Event, GUI, ESP templates',
+      'One-click insert code snippets from AI',
+      'Enhanced folder management UI',
+      'Fixed Roblox detection in packaged app',
+    ],
+  },
+  {
     version: '1.0.4',
     date: 'February 2026',
     type: 'release',
@@ -42,21 +68,11 @@ const changelog = [
       'Modern dark theme UI',
     ],
   },
-  {
-    version: '0.9.5',
-    date: 'January 2026',
-    type: 'beta',
-    changes: [
-      'Fixed execution stability',
-      'Improved attach speed',
-      'Added auto-execute',
-    ],
-  },
 ];
 
 export default function Download() {
   const handleDownload = () => {
-    window.open('https://github.com/aauuzyy/Xeno-x-Infernix/releases/latest/download/Infernix.Setup.1.0.4.exe', '_blank');
+    window.open('https://github.com/aauuzyy/Xeno-x-Infernix/releases/latest/download/Infernix%20Setup%201.0.7.exe', '_blank');
   };
 
   return (
@@ -75,8 +91,8 @@ export default function Download() {
             <Flame className="w-4 h-4 text-orange-400" />
             <span className="text-sm text-orange-300">Latest Release</span>
           </motion.div>
-          
-          <motion.h1 
+
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
@@ -84,7 +100,7 @@ export default function Download() {
           >
             Download <span className="gradient-text">Infernix</span>
           </motion.h1>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -108,8 +124,8 @@ export default function Download() {
                 <Flame className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Infernix 1.0.4</h2>
-                <p className="text-gray-500 text-sm">February 2026 • Latest Release</p>
+                <h2 className="text-2xl font-bold text-white">Infernix 1.0.7</h2>
+                <p className="text-gray-500 text-sm">February 2026  Latest Release</p>
               </div>
             </div>
 
@@ -156,10 +172,10 @@ export default function Download() {
           <div className="p-6 rounded-2xl bg-white/5 border border-orange-500/10">
             <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
               <Flame className="w-4 h-4 text-orange-400" />
-              Latest Updates
+              What's New in 1.0.7
             </h3>
             <div className="space-y-2">
-              {changelog[0].changes.map((change, index) => (
+              {changelog[0].changes.slice(0, 5).map((change, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, x: -10 }}
@@ -187,8 +203,8 @@ export default function Download() {
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-lg font-bold text-white">v{release.version}</span>
                   <span className={`px-2 py-0.5 rounded text-xs ${
-                    release.type === 'release' 
-                      ? 'bg-orange-500/20 text-orange-400' 
+                    release.type === 'release'
+                      ? 'bg-orange-500/20 text-orange-400'
                       : 'bg-gray-500/20 text-gray-400'
                   }`}>
                     {release.type === 'release' ? 'Release' : 'Beta'}

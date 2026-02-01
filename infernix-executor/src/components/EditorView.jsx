@@ -345,7 +345,7 @@ function EditorView({ tabs, activeTab, onTabChange, onNewTab, onCloseTab, onRena
           onChange={handleCodeChange}
           onMount={handleEditorMount}
           options={{
-            minimap: { enabled: false },
+            minimap: { enabled: true, scale: 1, showSlider: 'always' },
             fontSize: 13,
             lineHeight: 20,
             fontFamily: "'JetBrains Mono', 'Consolas', monospace",
@@ -385,3 +385,4 @@ function EditorView({ tabs, activeTab, onTabChange, onNewTab, onCloseTab, onRena
 }
 
 export default EditorView;
+

@@ -1,9 +1,35 @@
 import { useState, useEffect } from 'react';
-import { Zap, Users, FileCode, Clock, Flame, Sparkles, History } from 'lucide-react';
+import { Zap, Users, FileCode, Clock, Flame, Sparkles, History, XCircle } from 'lucide-react';
 import './Dashboard.css';
 
 // Changelog data
 const CHANGELOG = [
+  {
+    version: '1.0.7',
+    date: 'February 2026',
+    changes: [
+      '🔥 AutoExec now actually runs scripts on attach',
+      '🔥 Kill Roblox button in Dashboard and Settings',
+      '🔥 Fixed Workspace AI chat scrolling',
+      '🔥 Fixed chat message bubbles display',
+      '🔥 All settings buttons now functional',
+      '🔥 Improved overall stability',
+    ]
+  },
+  {
+    version: '1.0.6',
+    date: 'February 2026',
+    changes: [
+      '✨ NEW: AutoExec Manager - Select tabs and add to autoexec',
+      '✨ NEW: Workspace Script Editor with AI assistance',
+      '🤖 AI Assistant now helps EDIT scripts, not rewrite',
+      '🛠️ Script Tools: Loop, Function, Event, GUI, ESP templates',
+      '📋 One-click insert code snippets from AI',
+      '📁 Enhanced folder management UI',
+      '🎨 Improved fire theme throughout',
+      '🐛 Fixed Roblox detection in packaged app',
+    ]
+  },
   {
     version: '1.0.0',
     date: 'February 2026',
@@ -25,6 +51,7 @@ const CHANGELOG = [
 
 function Dashboard({ clients = [], executionCount = 0, scriptCount = 0, startTime, onViewChange }) {
   const [uptime, setUptime] = useState('0:00');
+  const [killing, setKilling] = useState(false);
 
   // Update uptime every second
   useEffect(() => {
@@ -33,18 +60,29 @@ function Dashboard({ clients = [], executionCount = 0, scriptCount = 0, startTim
       const hours = Math.floor(elapsed / 3600);
       const minutes = Math.floor((elapsed % 3600) / 60);
       const seconds = elapsed % 60;
-      
+
       if (hours > 0) {
         setUptime(`${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
       } else {
         setUptime(`${minutes}:${String(seconds).padStart(2, '0')}`);
       }
     };
-    
+
     updateUptime();
     const interval = setInterval(updateUptime, 1000);
     return () => clearInterval(interval);
   }, [startTime]);
+
+  const handleKillRoblox = async () => {
+    setKilling(true);
+    try {
+      await window.electronAPI?.killRoblox?.();
+    } catch (e) {
+      console.error('Failed to kill Roblox:', e);
+    } finally {
+      setTimeout(() => setKilling(false), 1000);
+    }
+  };
 
   const stats = [
     { icon: Flame, label: 'Executions', value: String(executionCount), color: '#f97316' },
@@ -98,6 +136,14 @@ function Dashboard({ clients = [], executionCount = 0, scriptCount = 0, startTim
           <button className="action-btn" onClick={() => onViewChange?.('clients')}>
             <Users size={16} />
             Client Manager
+          </button>
+          <button 
+            className={`action-btn danger ${killing ? 'killing' : ''}`} 
+            onClick={handleKillRoblox}
+            disabled={killing}
+          >
+            <XCircle size={16} />
+            {killing ? 'Killing...' : 'Kill Roblox'}
           </button>
         </div>
       </div>
