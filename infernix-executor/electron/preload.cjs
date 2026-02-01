@@ -57,5 +57,37 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Remove listeners
   removeClientsListener: () => {
     ipcRenderer.removeAllListeners('executor-clients');
-  }
+  },
+
+  // ==========================================
+  // V1.0.8 FEATURES
+  // ==========================================
+
+  // A/ANS - Admin Notification System
+  enableANS: () => ipcRenderer.invoke('enable-ans'),
+  getAdminNotifications: () => ipcRenderer.invoke('get-admin-notifications'),
+  clearAdminNotifications: () => ipcRenderer.invoke('clear-admin-notifications'),
+  onAdminNotification: (callback) => {
+    ipcRenderer.on('admin-notification', (event, data) => callback(data));
+  },
+  removeAdminNotificationListener: () => {
+    ipcRenderer.removeAllListeners('admin-notification');
+  },
+
+  // Automatic Updates
+  checkUpdates: () => ipcRenderer.invoke('check-updates'),
+  getCurrentVersion: () => ipcRenderer.invoke('get-current-version'),
+  downloadUpdate: (url) => ipcRenderer.invoke('download-update', url),
+
+  // ABS - Anti Banwave System
+  checkBanwave: () => ipcRenderer.invoke('check-banwave'),
+  getBanwaveStatus: () => ipcRenderer.invoke('get-banwave-status'),
+  setABSEnabled: (enabled) => ipcRenderer.invoke('set-abs-enabled', enabled),
+  absEmergencyShutdown: () => ipcRenderer.invoke('abs-emergency-shutdown'),
+  onBanwaveAlert: (callback) => {
+    ipcRenderer.on('banwave-alert', (event, data) => callback(data));
+  },
+  removeBanwaveListener: () => {
+    ipcRenderer.removeAllListeners('banwave-alert');
+  },
 });

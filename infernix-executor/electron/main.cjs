@@ -1227,6 +1227,405 @@ ipcMain.handle('remove-from-autoexec', async (event, scriptName) => {
   }
 });
 
+// ==========================================
+// V1.0.8 FEATURES
+// ==========================================
+
+// Current version for update checking
+const CURRENT_VERSION = '1.0.8';
+const GITHUB_REPO = 'aauuzyy/Xeno-x-Infernix';
+
+// A/ANS - Admin/Owner Notification System Lua Script
+const ADMIN_NOTIFICATION_SCRIPT = `
+-- Infernix A/ANS (Admin Notification System)
+-- Notifies when game owner/admin joins
+
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local LocalPlayer = Players.LocalPlayer
+
+-- Get game creator info
+local creatorId = game.CreatorId
+local creatorType = game.CreatorType
+
+local function getGameOwners()
+    local owners = {}
+    
+    if creatorType == Enum.CreatorType.User then
+        owners[creatorId] = true
+    elseif creatorType == Enum.CreatorType.Group then
+        -- Group games - owner is group owner and admins
+        pcall(function()
+            local groupInfo = game:GetService("GroupService"):GetGroupInfoAsync(creatorId)
+            if groupInfo and groupInfo.Owner then
+                owners[groupInfo.Owner.Id] = true
+            end
+        end)
+    end
+    
+    return owners
+end
+
+local gameOwners = getGameOwners()
+
+local function checkIfAdmin(player)
+    -- Check if player is game owner
+    if gameOwners[player.UserId] then
+        return true, "Game Owner"
+    end
+    
+    -- Check if in group and has high rank (250-255 = owners/admins)
+    if creatorType == Enum.CreatorType.Group then
+        local success, result = pcall(function()
+            local rank = player:GetRankInGroup(creatorId)
+            if rank >= 250 then
+                return true, "Group Owner/Admin (Rank " .. rank .. ")"
+            elseif rank >= 200 then
+                return true, "Group Moderator (Rank " .. rank .. ")"
+            end
+            return false, nil
+        end)
+        if success and result then
+            return result, "High Rank"
+        end
+    -- Send notification to Infernix
+    pcall(function()
+        local data = HttpService:JSONEncode({
+            type = "admin_join",
+            username = player.Name,
+            displayName = player.DisplayName,
+            userId = player.UserId,
+            adminType = adminType,
+            placeId = game.PlaceId,
+            timestamp = os.time()
+        })
+        
+        if request then
+            request({
+                Url = "http://127.0.0.1:3111/adminnotify",
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = data
+            })
+        elseif http_request then
+            http_request({
+                Url = "http://127.0.0.1:3111/adminnotify",
+                Method = "POST",
+                Headers = {["Content-Type"] = "application/json"},
+                Body = data
+            })
+        end
+    end)
+    
+    -- Also show in-game notification
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "⚠️ ADMIN ALERT",
+        Text = adminType .. " joined: " .. player.DisplayName,
+        Duration = 10,
+        Icon = "rbxassetid://6031071053"
+    })
+end
+
+-- Check existing players
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        local isAdmin, adminType = checkIfAdmin(player)
+        if isAdmin then
+            notifyAdmin(player, adminType)
+        end
+    end
+end
+
+-- Monitor new players
+Players.PlayerAdded:Connect(function(player)
+    task.wait(1) -- Wait for player data to load
+    local isAdmin, adminType = checkIfAdmin(player)
+    if isAdmin then
+        notifyAdmin(player, adminType)
+    end
+end)
+
+print("[Infernix A/ANS] Admin Notification System active")
+`;
+
+// Store for admin notifications
+let adminNotifications = [];
+
+// Handle admin notifications from Lua
+internalServer.on('request', (req, res) => {
+  if (req.method === 'POST' && req.url === '/adminnotify') {
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        adminNotifications.push(data);
+        
+        // Send to renderer
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('admin-notification', data);
+        }
+        
+        console.log('[Infernix A/ANS] Admin detected:', data.displayName, '-', data.adminType);
+        
+        // Check if auto-shutdown on admin join is enabled
+        const dirs = ensureUserDirs();
+        if (dirs) {
+          try {
+            const settings = JSON.parse(fs.readFileSync(dirs.settingsFile, 'utf-8'));
+            if (settings.ansAutoShutdown) {
+              console.log('[Infernix A/ANS] Auto-shutdown triggered! Admin/Owner joined.');
+              // Kill Roblox and close
+              if (executorAddon?.killRoblox) {
+                executorAddon.killRoblox();
+              } else {
+                exec('taskkill /F /IM RobloxPlayerBeta.exe /T');
+              }
+              setTimeout(() => app.quit(), 2000);
+            }
+          } catch (e) {}
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(400);
+        res.end('Invalid JSON');
+      }
+    });
+    return;
+  }
+});
+
+// IPC handler to enable A/ANS
+ipcMain.handle('enable-ans', async () => {
+  try {
+    // Execute the admin notification script on all attached clients
+    return new Promise((resolve) => {
+      const postData = ADMIN_NOTIFICATION_SCRIPT;
+      const options = {
+        hostname: 'localhost',
+        port: 3110,
+        path: '/o',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+
+      const req = http.request(options, (res) => {
+        res.on('data', () => {});
+        res.on('end', () => resolve({ ok: true }));
+      });
+      req.on('error', () => resolve({ ok: false, error: 'Failed to execute' }));
+      req.write(postData);
+      req.end();
+    });
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle('get-admin-notifications', async () => {
+  return adminNotifications;
+});
+
+ipcMain.handle('clear-admin-notifications', async () => {
+  adminNotifications = [];
+  return { ok: true };
+});
+
+// ==========================================
+// AUTOMATIC UPDATE SYSTEM
+// ==========================================
+
+const checkForUpdates = async () => {
+  return new Promise((resolve) => {
+    const options = {
+      hostname: 'api.github.com',
+      path: `/repos/${GITHUB_REPO}/releases/latest`,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Infernix-Executor',
+        'Accept': 'application/vnd.github.v3+json'
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const release = JSON.parse(data);
+          const latestVersion = release.tag_name?.replace('v', '') || '0.0.0';
+          const downloadUrl = release.assets?.[0]?.browser_download_url || null;
+          
+          const hasUpdate = compareVersions(latestVersion, CURRENT_VERSION) > 0;
+          
+          resolve({
+            hasUpdate,
+            currentVersion: CURRENT_VERSION,
+            latestVersion,
+            downloadUrl,
+            releaseNotes: release.body || '',
+            releaseName: release.name || `v${latestVersion}`
+          });
+        } catch (e) {
+          resolve({ hasUpdate: false, error: 'Failed to parse response' });
+        }
+      });
+    });
+
+    req.on('error', () => resolve({ hasUpdate: false, error: 'Network error' }));
+    req.setTimeout(10000, () => { req.destroy(); resolve({ hasUpdate: false, error: 'Timeout' }); });
+    req.end();
+  });
+};
+
+// Simple version comparison
+const compareVersions = (v1, v2) => {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+  }
+  return 0;
+};
+
+ipcMain.handle('check-updates', async () => {
+  return await checkForUpdates();
+});
+
+ipcMain.handle('get-current-version', async () => {
+  return CURRENT_VERSION;
+});
+
+ipcMain.handle('download-update', async (event, downloadUrl) => {
+  if (downloadUrl) {
+    shell.openExternal(downloadUrl);
+    return { ok: true };
+  }
+  return { ok: false, error: 'No download URL' };
+});
+
+// ==========================================
+// ABS - ANTI BANWAVE SYSTEM
+// ==========================================
+
+let banwaveStatus = { active: false, lastCheck: null, source: null };
+let absEnabled = true;
+
+// Check multiple community sources for banwave alerts
+const checkBanwaveStatus = async () => {
+  // Check various community APIs/sources for banwave status
+  // This is a simplified version - in production, you'd check multiple sources
+  
+  return new Promise((resolve) => {
+    // Check a community status endpoint (you can replace with actual API)
+    const options = {
+      hostname: 'raw.githubusercontent.com',
+      path: `/${GITHUB_REPO}/main/banwave-status.json`,
+      method: 'GET',
+      headers: { 'User-Agent': 'Infernix-Executor' }
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const status = JSON.parse(data);
+          banwaveStatus = {
+            active: status.banwave_active || false,
+            lastCheck: Date.now(),
+            source: 'github',
+            message: status.message || null,
+            severity: status.severity || 'unknown'
+          };
+          resolve(banwaveStatus);
+        } catch (e) {
+          // No banwave file = no banwave
+          banwaveStatus = { active: false, lastCheck: Date.now(), source: 'github' };
+          resolve(banwaveStatus);
+        }
+      });
+    });
+
+    req.on('error', () => {
+      banwaveStatus = { active: false, lastCheck: Date.now(), error: 'Network error' };
+      resolve(banwaveStatus);
+    });
+    req.setTimeout(5000, () => { req.destroy(); resolve({ active: false, error: 'Timeout' }); });
+    req.end();
+  });
+};
+
+// Auto-check banwave status every 5 minutes
+setInterval(async () => {
+  if (!absEnabled) return;
+  
+  const status = await checkBanwaveStatus();
+  
+  if (status.active && mainWindow && !mainWindow.isDestroyed()) {
+    // Alert the user
+    mainWindow.webContents.send('banwave-alert', status);
+    
+    // Load settings to check if auto-shutdown is enabled
+    const dirs = ensureUserDirs();
+    if (dirs) {
+      try {
+        const settings = JSON.parse(fs.readFileSync(dirs.settingsFile, 'utf-8'));
+        if (settings.absAutoShutdown) {
+          console.log('[Infernix ABS] Banwave detected! Auto-shutdown enabled.');
+          // Kill Roblox and close
+          if (executorAddon?.killRoblox) {
+            executorAddon.killRoblox();
+          } else {
+            exec('taskkill /F /IM RobloxPlayerBeta.exe /T');
+          }
+          setTimeout(() => app.quit(), 2000);
+        }
+      } catch {}
+    }
+  }
+}, 5 * 60 * 1000); // Every 5 minutes
+
+ipcMain.handle('check-banwave', async () => {
+  return await checkBanwaveStatus();
+});
+
+ipcMain.handle('get-banwave-status', async () => {
+  return banwaveStatus;
+});
+
+ipcMain.handle('set-abs-enabled', async (event, enabled) => {
+  absEnabled = enabled;
+  return { ok: true, enabled };
+});
+
+ipcMain.handle('abs-emergency-shutdown', async () => {
+  console.log('[Infernix ABS] Emergency shutdown triggered!');
+  
+  // Kill Roblox
+  if (executorAddon?.killRoblox) {
+    executorAddon.killRoblox();
+  } else {
+    exec('taskkill /F /IM RobloxPlayerBeta.exe /T');
+  }
+  
+  setTimeout(() => app.quit(), 1000);
+  return { ok: true };
+});
+
+// ==========================================
+// END V1.0.8 FEATURES
+// ==========================================
+
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();

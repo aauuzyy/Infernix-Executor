@@ -31,6 +31,18 @@ const features = [
 
 const changelog = [
   {
+    version: '1.0.8',
+    date: 'February 2026',
+    type: 'release',
+    changes: [
+      'A/ANS - Admin Notification System (alerts when owner/admin joins)',
+      'ABS - Anti Banwave System with auto-shutdown',
+      'Automatic Update Checker - checks GitHub for new versions',
+      'Emergency Shutdown button for quick escape',
+      'A/ANS Auto-Shutdown when admin joins (Rank 250-255)',
+    ],
+  },
+  {
     version: '1.0.7',
     date: 'February 2026',
     type: 'release',
@@ -72,7 +84,7 @@ const changelog = [
 
 export default function Download() {
   const handleDownload = () => {
-    window.open('https://github.com/aauuzyy/Xeno-x-Infernix/releases/latest/download/Infernix%20Setup%201.0.7.exe', '_blank');
+    window.open('https://github.com/aauuzyy/Xeno-x-Infernix/releases/latest/download/Infernix%20Setup%201.0.8.exe', '_blank');
   };
 
   return (
@@ -124,7 +136,7 @@ export default function Download() {
                 <Flame className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Infernix 1.0.7</h2>
+                <h2 className="text-2xl font-bold text-white">Infernix 1.0.8</h2>
                 <p className="text-gray-500 text-sm">February 2026  Latest Release</p>
               </div>
             </div>
@@ -172,7 +184,7 @@ export default function Download() {
           <div className="p-6 rounded-2xl bg-white/5 border border-orange-500/10">
             <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
               <Flame className="w-4 h-4 text-orange-400" />
-              What's New in 1.0.7
+              What's New in 1.0.8
             </h3>
             <div className="space-y-2">
               {changelog[0].changes.slice(0, 5).map((change, index) => (

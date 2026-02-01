@@ -1,11 +1,25 @@
 ﻿import { useState, useEffect } from 'react';
-import { FolderOpen, History, Settings2, Wand2, XCircle } from 'lucide-react';
+import { 
+  FolderOpen, History, Settings2, Wand2, XCircle, Bell, Shield, 
+  Download, RefreshCw, AlertTriangle, CheckCircle, Zap 
+} from 'lucide-react';
 import AutoExecManager from './AutoExecManager';
 import WorkspaceEditor from './WorkspaceEditor';
 import './SettingsView.css';
 
 // Changelog data
 const CHANGELOG = [
+  {
+    version: '1.0.8',
+    date: 'February 2026',
+    changes: [
+      '🔔 A/ANS - Admin Notification System (alerts when game owner/admin joins)',
+      '🔄 Automatic Update Checker - checks GitHub for new versions',
+      '🛡️ ABS - Anti Banwave System - monitors for banwaves',
+      '⚡ Emergency shutdown button for quick escape',
+      '🔧 New security settings panel',
+    ]
+  },
   {
     version: '1.0.7',
     date: 'February 2026',
@@ -15,40 +29,18 @@ const CHANGELOG = [
       '🔥 Fixed Workspace AI chat scrolling',
       '🔥 Fixed chat message bubbles display',
       '🔥 All settings buttons now functional',
-      '🔥 Improved overall stability',
     ]
   },
   {
     version: '1.0.6',
     date: 'February 2026',
     changes: [
-      '✨ NEW: AutoExec Manager - Select tabs and add to autoexec',
-      '✨ NEW: Workspace Script Editor with AI assistance',
-      '🤖 AI Assistant now helps EDIT scripts, not rewrite',
+      '✨ AutoExec Manager - Select tabs and add to autoexec',
+      '✨ Workspace Script Editor with AI assistance',
+      '🤖 AI Assistant now helps EDIT scripts',
       '🛠️ Script Tools: Loop, Function, Event, GUI, ESP templates',
-      '📋 One-click insert code snippets from AI',
-      '📁 Enhanced folder management UI',
-      '🎨 Improved fire theme throughout',
-      '🐛 Fixed Roblox detection in packaged app',
     ]
   },
-  {
-    version: '1.0.0',
-    date: 'February 2026',
-    changes: [
-      '🚀 Initial release of Infernix Executor',
-      '🔥 Complete UI overhaul with fire theme',
-      '💾 Script saving with custom names and descriptions',
-      '📂 Open saved scripts with professional modal UI',
-      '👤 Client Manager shows avatar, nickname, and game info',
-      '🎮 ScriptHub with automatic game detection',
-      '💬 AI Assistant for script generation',
-      '📊 Dashboard with live stats and quick actions',
-      '🔇 Silent operation - no executor branding',
-      '💾 Persistent tabs - scripts saved between sessions',
-      '⚙️ Settings persistence',
-    ]
-  }
 ];
 
 function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
@@ -57,12 +49,21 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
     autoAttach: true,
     autoExecute: false,
     closeRoblox: false,
+    ansEnabled: true,
+    ansAutoShutdown: false,
+    absEnabled: true,
+    absAutoShutdown: false,
+    autoCheckUpdates: true,
     theme: 'dark',
   });
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [showAutoExec, setShowAutoExec] = useState(false);
   const [showWorkspace, setShowWorkspace] = useState(false);
   const [killing, setKilling] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+  const [banwaveStatus, setBanwaveStatus] = useState(null);
+  const [currentVersion, setCurrentVersion] = useState('1.0.8');
 
   // Load saved settings on mount
   useEffect(() => {
@@ -72,6 +73,8 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
         if (saved) {
           setSettings(prev => ({ ...prev, ...saved }));
         }
+        const version = await window.electronAPI?.getCurrentVersion?.();
+        if (version) setCurrentVersion(version);
       } catch (e) {
         console.error('Failed to load settings:', e);
       } finally {
@@ -79,12 +82,21 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
       }
     };
     loadSettings();
+    
+    // Check for updates on load
+    checkForUpdates();
+    
+    // Check banwave status
+    checkBanwaveStatus();
   }, []);
 
   // Save settings when they change
   useEffect(() => {
     if (!settingsLoaded) return;
     window.electronAPI?.saveSettings(settings);
+    
+    // Update ABS enabled state
+    window.electronAPI?.setABSEnabled?.(settings.absEnabled);
   }, [settings, settingsLoaded]);
 
   const toggleSetting = (key) => {
@@ -122,6 +134,48 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
     }
   };
 
+  const checkForUpdates = async () => {
+    setCheckingUpdates(true);
+    try {
+      const result = await window.electronAPI?.checkUpdates?.();
+      setUpdateInfo(result);
+    } catch (e) {
+      console.error('Failed to check updates:', e);
+    } finally {
+      setCheckingUpdates(false);
+    }
+  };
+
+  const handleDownloadUpdate = async () => {
+    if (updateInfo?.downloadUrl) {
+      await window.electronAPI?.downloadUpdate?.(updateInfo.downloadUrl);
+    }
+  };
+
+  const checkBanwaveStatus = async () => {
+    try {
+      const status = await window.electronAPI?.checkBanwave?.();
+      setBanwaveStatus(status);
+    } catch (e) {
+      console.error('Failed to check banwave:', e);
+    }
+  };
+
+  const handleEmergencyShutdown = async () => {
+    if (confirm('This will kill Roblox and close Infernix immediately. Continue?')) {
+      await window.electronAPI?.absEmergencyShutdown?.();
+    }
+  };
+
+  const enableANS = async () => {
+    try {
+      await window.electronAPI?.enableANS?.();
+      alert('A/ANS activated! You will be notified when admins join.');
+    } catch (e) {
+      console.error('Failed to enable ANS:', e);
+    }
+  };
+
   const getToggleClass = (isActive) => {
     return 'toggle' + (isActive ? ' active' : '');
   };
@@ -129,6 +183,36 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
   return (
     <div className="settings-view">
       <h2 className="settings-title">Settings</h2>
+
+      {/* Update Banner */}
+      {updateInfo?.hasUpdate && (
+        <div className="update-banner">
+          <div className="update-info">
+            <Download size={18} />
+            <div>
+              <strong>Update Available!</strong>
+              <span>v{updateInfo.latestVersion} is now available</span>
+            </div>
+          </div>
+          <button className="update-btn" onClick={handleDownloadUpdate}>
+            Download Now
+          </button>
+        </div>
+      )}
+
+      {/* Banwave Alert */}
+      {banwaveStatus?.active && (
+        <div className="banwave-alert">
+          <AlertTriangle size={18} />
+          <div>
+            <strong>⚠️ BANWAVE DETECTED!</strong>
+            <span>{banwaveStatus.message || 'Exercise extreme caution!'}</span>
+          </div>
+          <button className="emergency-btn" onClick={handleEmergencyShutdown}>
+            Emergency Shutdown
+          </button>
+        </div>
+      )}
 
       <div className="settings-section">
         <h3 className="section-title">General</h3>
@@ -186,12 +270,105 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
         </div>
       </div>
 
+      {/* V1.0.8 Security Section */}
+      <div className="settings-section">
+        <h3 className="section-title">Security</h3>
+
+        <div className="setting-item">
+          <div className="setting-info">
+            <span className="setting-label">A/ANS - Admin Notifications</span>
+            <span className="setting-desc">Alert when game owner/admin joins (Rank 250-255)</span>
+          </div>
+          <button
+            className={getToggleClass(settings.ansEnabled)}
+            onClick={() => toggleSetting('ansEnabled')}
+          >
+            <span className="toggle-knob" />
+          </button>
+        </div>
+
+        <div className="setting-item">
+          <div className="setting-info">
+            <span className="setting-label">A/ANS Auto-Shutdown</span>
+            <span className="setting-desc">Auto close when admin/owner joins</span>
+          </div>
+          <button
+            className={getToggleClass(settings.ansAutoShutdown)}
+            onClick={() => toggleSetting('ansAutoShutdown')}
+          >
+            <span className="toggle-knob" />
+          </button>
+        </div>
+
+        <div className="setting-item">
+          <div className="setting-info">
+            <span className="setting-label">ABS - Anti Banwave System</span>
+            <span className="setting-desc">Monitor for banwave alerts from GitHub</span>
+          </div>
+          <button
+            className={getToggleClass(settings.absEnabled)}
+            onClick={() => toggleSetting('absEnabled')}
+          >
+            <span className="toggle-knob" />
+          </button>
+        </div>
+
+        <div className="setting-item">
+          <div className="setting-info">
+            <span className="setting-label">ABS Auto-Shutdown</span>
+            <span className="setting-desc">Auto close during banwaves</span>
+          </div>
+          <button
+            className={getToggleClass(settings.absAutoShutdown)}
+            onClick={() => toggleSetting('absAutoShutdown')}
+          >
+            <span className="toggle-knob" />
+          </button>
+        </div>
+
+        <div className="folders-row" style={{ marginTop: '12px' }}>
+          <button className="folder-btn" onClick={enableANS}>
+            <Bell size={14} />
+            Activate A/ANS
+          </button>
+          <button className="folder-btn danger" onClick={handleEmergencyShutdown}>
+            <Zap size={14} />
+            Emergency Shutdown
+          </button>
+        </div>
+
+        <div className="setting-item" style={{ marginTop: '12px' }}>
+          <div className="setting-info">
+            <span className="setting-label">Banwave Status</span>
+            <span className="setting-desc">
+              {banwaveStatus?.active ? '⚠️ ACTIVE - BE CAREFUL!' : '✓ All Clear'}
+            </span>
+          </div>
+          <button 
+            className="folder-btn secondary" 
+            onClick={checkBanwaveStatus}
+            style={{ flex: 'none', minWidth: 'auto', padding: '6px 12px' }}
+          >
+            <RefreshCw size={12} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
       <div className="settings-section">
         <h3 className="section-title">Actions</h3>
         <div className="folders-row">
           <button className="folder-btn danger" onClick={handleKillRoblox} disabled={killing}>
             <XCircle size={14} />
             {killing ? 'Killing...' : 'Kill Roblox'}
+          </button>
+          <button 
+            className="folder-btn" 
+            onClick={checkForUpdates} 
+            disabled={checkingUpdates}
+          >
+            <RefreshCw size={14} className={checkingUpdates ? 'spinning' : ''} />
+            {checkingUpdates ? 'Checking...' : 'Check Updates'}
           </button>
         </div>
       </div>
@@ -248,7 +425,7 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
         <h3 className="section-title">About</h3>
         <div className="about-info">
           <p><strong>Infernix Executor</strong></p>
-          <p>Version 1.0.7</p>
+          <p>Version {currentVersion}</p>
           <p className="muted">© 2026 Infernix Team</p>
         </div>
       </div>
