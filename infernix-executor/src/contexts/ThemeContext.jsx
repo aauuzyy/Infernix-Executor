@@ -235,8 +235,20 @@ export function ThemeProvider({ children }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
+  // Return defaults if used outside provider (prevents crashes)
   if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+    return {
+      themeMode: 'dark',
+      setThemeMode: () => {},
+      accentColor: '#f97316',
+      setAccentColor: () => {},
+      colorShift: false,
+      setColorShift: () => {},
+      colorShiftSpeed: 10,
+      setColorShiftSpeed: () => {},
+      themes: [],
+      accentPresets: [],
+    };
   }
   return context;
 }

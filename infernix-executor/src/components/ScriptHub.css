@@ -674,3 +674,59 @@
 }
 
 
+
+
+/* Virtualization - Fade in/out animations */
+.script-card-wrapper {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  will-change: opacity, transform;
+}
+
+.script-card-wrapper.in-view {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.script-card-wrapper.out-of-view {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+/* Placeholder cards for unloaded content */
+.script-card.placeholder-card {
+  pointer-events: none;
+  min-height: 280px;
+}
+
+.script-card.placeholder-card .thumb-placeholder {
+  background: var(--bg-tertiary);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.script-card.placeholder-card .script-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+
+.placeholder-text {
+  height: 14px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.placeholder-text.short {
+  width: 60%;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+/* Smooth scroll behavior */
+.scripts-container {
+  scroll-behavior: smooth;
+}
