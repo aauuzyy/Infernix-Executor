@@ -125,7 +125,7 @@ function Embers() {
 
 export default function Home() {
   const [recentUsers, setRecentUsers] = useState([]);
-  const [userCount, setUserCount] = useState(810230);
+  const [userCount, setUserCount] = useState(0);
 
   // Fetch recent users from API
   useEffect(() => {

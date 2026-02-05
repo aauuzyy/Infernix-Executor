@@ -1,7 +1,7 @@
 // In-memory store for recent users (resets on cold start)
 // For persistence, you'd use a database like MongoDB, Supabase, or Vercel KV
 let recentUsers = [];
-let totalUsers = 810230;
+let totalUsers = 0;
 
 export default function handler(req, res) {
   // Enable CORS
