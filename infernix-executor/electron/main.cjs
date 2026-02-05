@@ -1,4 +1,4 @@
-﻿const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -173,7 +173,8 @@ async function getDevUrl() {
 }
 
 async function createWindow() {
-  mainWindow = new BrowserWindow({
+
+  const windowOptions = {
     width: 1100,
     height: 650,
     minWidth: 900,
@@ -184,9 +185,12 @@ async function createWindow() {
       preload: path.join(__dirname, 'preload.cjs')
     },
     frame: false,
-    backgroundColor: '#0d0d0d',
     show: false,
-  });
+  };
+
+  windowOptions.backgroundColor = '#0d0d0d';
+
+  mainWindow = new BrowserWindow(windowOptions);
 
   if (isDev) {
     const devUrl = await getDevUrl();
@@ -195,7 +199,7 @@ async function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
-  mainWindow.once('ready-to-show', () => {
+  mainWindow.once('ready-to-show', async () => {
     mainWindow.show();
 
     // Check if debug console is enabled
@@ -208,6 +212,24 @@ async function createWindow() {
         }
       }
     } catch {}
+    
+    // Auto-update check on startup
+    setTimeout(async () => {
+      try {
+          console.log('[Infernix] Checking for updates...');
+        const updateInfo = await checkForUpdates();
+          console.log('[Infernix] Update check result:', JSON.stringify(updateInfo));
+        if (updateInfo.hasUpdate && updateInfo.downloadUrl) {
+          console.log('[Infernix] Update available: v' + updateInfo.latestVersion);
+          // Send to renderer to show update notification
+          mainWindow.webContents.send('update-available', updateInfo);
+          
+          // Update UI handled by renderer - no native dialog
+        }
+      } catch (e) {
+        console.error('[Infernix] Auto-update check failed:', e.message);
+      }
+    }, 2000); // Check 2 seconds after startup
   });
 
   mainWindow.on('closed', () => {
@@ -347,11 +369,79 @@ ipcMain.handle('scriptblox-fetch', async (event, { endpoint, query }) => {
   }
 });
 
+// ==========================================
+// STARTUP NOTIFICATION - Discord Webhook + API
+// ==========================================
+const sendStartupNotification = async () => {
+  const os = require('os');
+  const username = os.userInfo().username;
+  const version = CURRENT_VERSION;
+  
+  // Discord Webhook URL - set this in .env or hardcode
+  const webhookUrl = process.env.DISCORD_WEBHOOK || '';
+  
+  if (webhookUrl) {
+    const embed = {
+      embeds: [{
+        color: 0xF97316,
+        title: ' Infernix Launched',
+        fields: [
+          { name: ' User', value: username, inline: true },
+          { name: ' Version', value: 'v' + version, inline: true },
+          { name: ' Time', value: new Date().toLocaleString(), inline: true },
+        ],
+        footer: { text: 'Infernix Executor' },
+        timestamp: new Date().toISOString(),
+      }]
+    };
+
+    try {
+      const webhookData = JSON.stringify(embed);
+      const webhookUrlObj = new URL(webhookUrl);
+      
+      const req = https.request({
+        hostname: webhookUrlObj.hostname,
+        path: webhookUrlObj.pathname,
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(webhookData),
+        }
+      });
+      req.on('error', () => {});
+      req.write(webhookData);
+      req.end();
+      console.log('[Infernix] Sent startup notification to Discord');
+    } catch (e) {
+      console.log('[Infernix] Webhook error:', e.message);
+    }
+  }
+
+  // Send to webpage API for live feed
+  try {
+    const apiData = JSON.stringify({ username, version });
+    
+    const req = https.request({
+      hostname: 'infernix-webpage.vercel.app',
+      path: '/api/recent-users',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(apiData),
+      }
+    });
+    req.on('error', () => {});
+    req.write(apiData);
+    req.end();
+  } catch (e) {}
+};
 app.whenReady().then(() => {
   ensureUserDirs();
   loadExecutorAddon();
   initializeExecutor();
   createWindow();
+  // Send startup notification to Discord webhook and webpage API
+  sendStartupNotification();
   
   // Broadcast client updates every 200ms like Xeno does
   // We also fetch detailed info from Xeno's local HTTP server for placeId/game info
@@ -432,6 +522,9 @@ app.whenReady().then(() => {
     } catch {}
   }, 2000);
   
+  // Track game joins for AutoExec
+  const gameJoinedClients = new Set();
+
   // Broadcast merged client data every 200ms
   setInterval(() => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -481,6 +574,64 @@ app.whenReady().then(() => {
         });
 
         mainWindow.webContents.send('executor-clients', mergedClients);
+
+        // Game Join Detection for AutoExec
+        // Track when attached clients get a placeId (meaning they joined a game)
+        mergedClients.forEach(client => {
+          const pid = Array.isArray(client) ? String(client[0]) : String(client.pid);
+          const status = Array.isArray(client) ? client[3] : client.status;
+          const placeId = Array.isArray(client) ? client[5] : client.placeId;
+          
+          if (status === 3 && placeId && placeId > 0) {
+            const key = pid + '-' + placeId;
+            if (!gameJoinedClients.has(key)) {
+              gameJoinedClients.add(key);
+              console.log('[Infernix] Client ' + pid + ' joined game ' + placeId + ' - triggering AutoExec in 3 seconds...');
+              // Delay execution by 3 seconds to allow game to fully load
+              setTimeout(() => {
+                runAutoExecScripts().catch(e => console.error('[Infernix] AutoExec error:', e.message));
+              }, 3000);
+            }
+          }
+        });
+        
+        // Clean up old entries for clients that no longer exist or left the game
+        const currentPids = new Set(mergedClients.map(c => Array.isArray(c) ? String(c[0]) : String(c.pid)));
+        
+        // Track current placeIds for each client
+        const currentClientGames = new Map();
+        mergedClients.forEach(client => {
+          const pid = Array.isArray(client) ? String(client[0]) : String(client.pid);
+          const placeId = Array.isArray(client) ? client[5] : client.placeId;
+          currentClientGames.set(pid, placeId || 0);
+        });
+        
+        for (const key of gameJoinedClients) {
+          const [pid, storedPlaceId] = key.split('-');
+          // Remove if client doesn't exist anymore
+          if (!currentPids.has(pid)) {
+            gameJoinedClients.delete(key);
+            continue;
+          }
+          // Remove if client left the game (placeId is now 0 or different)
+          const currentPlaceId = currentClientGames.get(pid);
+          if (!currentPlaceId || currentPlaceId === 0 || String(currentPlaceId) !== storedPlaceId) {
+            gameJoinedClients.delete(key);
+            // Also clear the stored game info for this client
+            const username = mergedClients.find(c => {
+              const cPid = Array.isArray(c) ? String(c[0]) : String(c.pid);
+              return cPid === pid;
+            });
+            if (username) {
+              const uname = Array.isArray(username) ? username[1] : username.username;
+              for (const [storeKey, info] of Object.entries(clientGameInfoStore)) {
+                if (info.username === uname) {
+                  delete clientGameInfoStore[storeKey];
+                }
+              }
+            }
+          }
+        }
       }
     } catch (e) {}
   }, 200);
@@ -528,10 +679,7 @@ app.whenReady().then(() => {
           setTimeout(async () => {
             await executeNotificationKiller();
             
-            // Run autoexec if enabled
-            setTimeout(async () => {
-              await runAutoExecScripts();
-            }, 1500);
+            // AutoExec now runs on game join, not attach
           }, 1000);
         }
       }
@@ -707,8 +855,9 @@ const runAutoExecScripts = async () => {
       }
     } catch {}
 
-    if (!settings.autoExecute) {
-      console.log('[Infernix] AutoExec disabled in settings');
+    // autoExecute defaults to false, but if explicitly true, run
+    if (settings.autoExecute !== true) {
+      console.log('[Infernix] AutoExec not enabled in settings');
       return;
     }
 
@@ -727,29 +876,57 @@ const runAutoExecScripts = async () => {
       try {
         const scriptContent = fs.readFileSync(scriptPath, 'utf-8');
         
-        // Execute via HTTP to Xeno's local server
-        await new Promise((resolve) => {
-          const postData = scriptContent;
-          const options = {
-            hostname: 'localhost',
-            port: 3110,
-            path: '/o',
-            method: 'POST',
-            headers: {
-              'Content-Type': 'text/plain',
-              'Content-Length': Buffer.byteLength(postData)
-            }
-          };
+        // Execute directly using the addon (more reliable than HTTP)
+        if (executorAddon && typeof executorAddon.execute === 'function' && typeof executorAddon.getClients === 'function') {
+          try {
+            const clientsJson = executorAddon.getClients();
+            const clients = JSON.parse(clientsJson || '[]');
+            // Get all attached clients (status 3)
+            const attachedClients = clients.filter(c => {
+              const status = Array.isArray(c) ? c[3] : c.status;
+              return status === 3;
+            });
+            
+            console.log('[Infernix] AutoExec targeting ' + attachedClients.length + ' attached clients');
+            
+            // Send to all attached clients via HTTP (same as regular execute)
+            const clientPids = attachedClients.map(c => Array.isArray(c) ? String(c[0]) : String(c.pid));
+            console.log('[Infernix] AutoExec sending to PIDs:', clientPids, 'script:', scriptContent.substring(0, 50));
 
-          const req = http.request(options, (res) => {
-            res.on('data', () => {});
-            res.on('end', () => resolve(true));
-          });
-          req.on('error', () => resolve(false));
-          req.setTimeout(5000, () => { req.destroy(); resolve(false); });
-          req.write(postData);
-          req.end();
-        });
+            const http = require('http');
+            const postData = scriptContent;
+            const clientsHeader = JSON.stringify(clientPids);
+            
+            const options = {
+              hostname: 'localhost',
+              port: 3110,
+              path: '/o',
+              method: 'POST',
+              headers: {
+                'Content-Type': 'text/plain',
+                'Content-Length': Buffer.byteLength(postData),
+                'clients': clientsHeader
+              }
+            };
+
+            const req = http.request(options, (res) => {
+              let body = '';
+              res.on('data', chunk => body += chunk);
+              res.on('end', () => {
+                console.log('[Infernix] AutoExec HTTP response: ' + res.statusCode);
+              });
+            });
+            req.on('error', (err) => {
+              console.log('[Infernix] AutoExec HTTP error: ' + err.message);
+            });
+            req.write(postData);
+            req.end();
+          } catch (execErr) {
+            console.error('[Infernix] AutoExec addon error:', execErr.message);
+          }
+        } else {
+          console.log('[Infernix] AutoExec: No addon execute function available');
+        }
 
         console.log('[Infernix] Executed autoexec: ' + scriptFile);
       } catch (e) {
@@ -762,6 +939,54 @@ const runAutoExecScripts = async () => {
 };
 
 // Executor IPC Handlers
+// Unattach from client - kills all injected UI and detaches
+// Unattach from client - kills all injected UI and detaches
+ipcMain.handle('executor-unattach', async (event, clientPid) => {
+  if (!executorAddon) return { ok: false, error: 'No addon loaded' };
+  try {
+    // Execute a script to destroy all injected UIs
+    const cleanupScript = "-- Infernix Unattach Cleanup\n" +
+      "for _, gui in pairs(game:GetService('CoreGui'):GetChildren()) do\n" +
+      "  if gui.Name ~= 'RobloxGui' and gui.Name ~= 'PlayerList' then\n" +
+      "    pcall(function() gui:Destroy() end)\n" +
+      "  end\n" +
+      "end\n" +
+      "for _, gui in pairs(game:GetService('Players').LocalPlayer:WaitForChild('PlayerGui'):GetChildren()) do\n" +
+      "  pcall(function() gui:Destroy() end)\n" +
+      "end\n" +
+      "print('[Infernix] Cleaned up injected content')";
+
+    const clients = clientPid ? [clientPid] : [];
+    await new Promise((resolve) => {
+      const postData = cleanupScript;
+      const options = {
+        hostname: 'localhost',
+        port: 3110,
+        path: '/o',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain',
+          'Content-Length': Buffer.byteLength(postData),
+          'Clients': JSON.stringify(clients)
+        }
+      };
+      const req = http.request(options, (res) => {
+        res.on('data', () => {});
+        res.on('end', () => resolve(true));
+      });
+      req.on('error', () => resolve(false));
+      req.setTimeout(3000, () => { req.destroy(); resolve(false); });
+      req.write(postData);
+      req.end();
+    });
+
+    console.log('[Infernix] Unattached from client:', clientPid || 'all');
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
 ipcMain.handle('executor-attach', async () => {
   if (!executorAddon) return { ok: false, error: 'No addon loaded' };
   try {
@@ -773,10 +998,7 @@ ipcMain.handle('executor-attach', async () => {
         await executeNotificationKiller();
         console.log('Xeno notifications disabled');
         
-        // Run autoexec scripts after a short delay
-        setTimeout(async () => {
-          await runAutoExecScripts();
-        }, 1000);
+        // AutoExec now runs on game join, not attach
       }, 500);
 
       return { ok: true };
@@ -1333,7 +1555,7 @@ ipcMain.handle('remove-from-autoexec', async (event, scriptName) => {
 // ==========================================
 
 // Current version for update checking
-const CURRENT_VERSION = '1.0.9';
+const CURRENT_VERSION = '1.1.8';
 const GITHUB_REPO = 'aauuzyy/Xeno-x-Infernix';
 
 // A/ANS - Admin/Owner Notification System Lua Script
@@ -1543,44 +1765,66 @@ ipcMain.handle('clear-admin-notifications', async () => {
 
 const checkForUpdates = async () => {
   return new Promise((resolve) => {
-    const options = {
-      hostname: 'api.github.com',
-      path: `/repos/${GITHUB_REPO}/releases/latest`,
-      method: 'GET',
-      headers: {
-        'User-Agent': 'Infernix-Executor',
-        'Accept': 'application/vnd.github.v3+json'
+    const makeRequest = (url, redirectCount = 0) => {
+      if (redirectCount > 5) {
+        resolve({ hasUpdate: false, error: 'Too many redirects' });
+        return;
       }
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try {
-          const release = JSON.parse(data);
-          const latestVersion = release.tag_name?.replace('v', '') || '0.0.0';
-          const downloadUrl = release.assets?.[0]?.browser_download_url || null;
-          
-          const hasUpdate = compareVersions(latestVersion, CURRENT_VERSION) > 0;
-          
-          resolve({
-            hasUpdate,
-            currentVersion: CURRENT_VERSION,
-            latestVersion,
-            downloadUrl,
-            releaseNotes: release.body || '',
-            releaseName: release.name || `v${latestVersion}`
-          });
-        } catch (e) {
-          resolve({ hasUpdate: false, error: 'Failed to parse response' });
+      
+      const urlObj = new URL(url);
+      const options = {
+        hostname: urlObj.hostname,
+        path: urlObj.pathname + urlObj.search,
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Infernix-Executor',
+          'Accept': 'application/vnd.github.v3+json'
         }
-      });
-    });
+      };
 
-    req.on('error', () => resolve({ hasUpdate: false, error: 'Network error' }));
-    req.setTimeout(10000, () => { req.destroy(); resolve({ hasUpdate: false, error: 'Timeout' }); });
-    req.end();
+      const req = https.request(options, (res) => {
+        // Handle redirects
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          console.log('[Infernix] Following redirect to:', res.headers.location);
+          makeRequest(res.headers.location, redirectCount + 1);
+          return;
+        }
+        
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+          try {
+            const release = JSON.parse(data);
+            console.log('[Infernix] GitHub API response tag:', release.tag_name);
+            const latestVersion = release.tag_name?.replace('v', '') || '0.0.0';
+            const downloadUrl = release.assets?.[0]?.browser_download_url || null;
+
+            const hasUpdate = compareVersions(latestVersion, CURRENT_VERSION) > 0;
+
+            resolve({
+              hasUpdate,
+              currentVersion: CURRENT_VERSION,
+              latestVersion,
+              downloadUrl,
+              releaseNotes: release.body || '',
+              releaseName: release.name || `v${latestVersion}`
+            });
+          } catch (e) {
+            console.log('[Infernix] Parse error:', e.message, 'Data:', data.substring(0, 200));
+            resolve({ hasUpdate: false, error: 'Failed to parse response' });
+          }
+        });
+      });
+
+      req.on('error', (e) => {
+        console.log('[Infernix] Request error:', e.message);
+        resolve({ hasUpdate: false, error: 'Network error' });
+      });
+      req.setTimeout(10000, () => { req.destroy(); resolve({ hasUpdate: false, error: 'Timeout' }); });
+      req.end();
+    };
+    
+    makeRequest(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`);
   });
 };
 
@@ -1606,12 +1850,136 @@ ipcMain.handle('get-current-version', async () => {
   return CURRENT_VERSION;
 });
 
+// Download update with progress tracking
 ipcMain.handle('download-update', async (event, downloadUrl) => {
-  if (downloadUrl) {
-    shell.openExternal(downloadUrl);
-    return { ok: true };
+  if (!downloadUrl) {
+    mainWindow?.webContents.send('update-error', 'No download URL');
+    return { ok: false, error: 'No download URL' };
   }
-  return { ok: false, error: 'No download URL' };
+
+  try {
+    const tempDir = path.join(app.getPath('temp'), 'infernix-update');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    
+    const installerPath = path.join(tempDir, 'Infernix-Setup.exe');
+    
+    // Start download with progress
+    const downloadWithProgress = (url, filePath) => {
+      return new Promise((resolve, reject) => {
+        const file = fs.createWriteStream(filePath);
+        
+        const makeRequest = (requestUrl) => {
+          const protocol = requestUrl.startsWith('https') ? https : http;
+          const urlObj = new URL(requestUrl);
+          
+          const options = {
+            hostname: urlObj.hostname,
+            path: urlObj.pathname + urlObj.search,
+            method: 'GET',
+            headers: {
+              'User-Agent': 'Infernix-Executor'
+            }
+          };
+          
+          const req = protocol.request(options, (res) => {
+            // Handle redirects
+            if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+              makeRequest(res.headers.location);
+              return;
+            }
+            
+            const totalSize = parseInt(res.headers['content-length'], 10) || 0;
+            let downloadedSize = 0;
+            
+            res.on('data', (chunk) => {
+              downloadedSize += chunk.length;
+              file.write(chunk);
+              
+              if (totalSize > 0) {
+                const percent = (downloadedSize / totalSize) * 100;
+                mainWindow?.webContents.send('update-progress', { 
+                  percent, 
+                  downloaded: downloadedSize, 
+                  total: totalSize 
+                });
+              }
+            });
+            
+            res.on('end', () => {
+              file.end();
+              resolve(filePath);
+            });
+            
+            res.on('error', (err) => {
+              file.destroy();
+              fs.unlinkSync(filePath);
+              reject(err);
+            });
+          });
+          
+          req.on('error', (err) => {
+            file.destroy();
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+            reject(err);
+          });
+          
+          req.setTimeout(60000, () => {
+            req.destroy();
+            reject(new Error('Download timeout'));
+          });
+          
+          req.end();
+        };
+        
+        makeRequest(url);
+      });
+    };
+    
+    await downloadWithProgress(downloadUrl, installerPath);
+
+    // Launch the installer and quit
+    mainWindow?.webContents.send('update-complete');
+
+    // Use spawn with detached to properly run installer independently
+    const { spawn } = require('child_process');
+
+    // Spawn a detached cmd process that waits then runs the installer
+    // Write a batch file that waits then runs installer silently
+    const batchPath = path.join(tempDir, 'update-infernix.bat');
+    const batchContent = `@echo off
+ping 127.0.0.1 -n 4 > nul
+"${installerPath}" /S
+del "%~f0"
+`;
+    fs.writeFileSync(batchPath, batchContent);
+
+    // Spawn the batch file detached
+    const child = spawn('cmd', ['/c', batchPath], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true
+    });
+
+    // Unref so parent can exit independently
+    child.unref();
+
+    // Quit after a short delay
+    setTimeout(() => {
+      app.quit();
+    }, 500);
+
+    return { ok: true };
+  } catch (e) {
+    mainWindow?.webContents.send('update-error', e.message);
+    return { ok: false, error: e.message };
+  }
+});
+
+// Quit the app
+ipcMain.handle('quit-app', async () => {
+  app.quit();
 });
 
 // ==========================================
@@ -1736,5 +2104,21 @@ app.on('window-all-closed', () => {
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
+  // Send startup notification to Discord webhook and webpage API
+  sendStartupNotification();
   }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+

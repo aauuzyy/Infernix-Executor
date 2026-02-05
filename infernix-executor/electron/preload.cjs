@@ -1,4 +1,4 @@
-﻿const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
   // Window controls
@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
   // Executor functions
   attach: () => ipcRenderer.invoke('executor-attach'),
+  unattach: (clientPid) => ipcRenderer.invoke('executor-unattach', clientPid),
   execute: (script, clients) => ipcRenderer.invoke('executor-execute', { script, clients }),
   getClients: () => ipcRenderer.invoke('executor-get-clients'),
   killRoblox: () => ipcRenderer.invoke('executor-kill-roblox'),
@@ -93,4 +94,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
   removeBanwaveListener: () => {
     ipcRenderer.removeAllListeners('banwave-alert');
   },
+
+  // ==========================================
+  // V1.1.0 FEATURES - UPDATE SYSTEM
+  // ==========================================
+  
+  // Update progress events
+  onUpdateProgress: (callback) => {
+    ipcRenderer.on('update-progress', (event, data) => callback(data));
+  },
+  onUpdateComplete: (callback) => {
+    ipcRenderer.on('update-complete', () => callback());
+  },
+  onUpdateError: (callback) => {
+    ipcRenderer.on('update-error', (event, error) => callback(error));
+  },
+  removeUpdateListeners: () => {
+    ipcRenderer.removeAllListeners('update-progress');
+    ipcRenderer.removeAllListeners('update-complete');
+    ipcRenderer.removeAllListeners('update-error');
+  },
+  
+  // App control
+  quitApp: () => ipcRenderer.invoke('quit-app'),
 });
+
+

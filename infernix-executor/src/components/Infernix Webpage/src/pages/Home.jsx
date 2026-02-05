@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
   Zap,
@@ -10,37 +10,44 @@ import {
   Download,
   Flame,
   Sparkles,
-  History
+  History,
+  Activity
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 const changelog = [
   {
-    version: '1.0.9',
+    version: '1.1.8',
     date: 'February 2026',
     changes: [
-      '🎨 Custom Themes - Color picker for accent colors',
-      '🚀 Auto-Update System - Detects new releases from GitHub',
-      '⚡ ScriptHub Virtualization - Smoother scrolling',
-      '🔥 Dynamic accent color across entire UI',
+      '🔄 Silent Auto-Updates - No more uninstall prompts',
+      '🔧 Fixed Premium Script Execution - Large scripts work properly',
+      '📡 Improved Script Hub Execution - Uses IPC for reliability',
     ]
   },
   {
-    version: '1.0.8',
+    version: '1.1.5',
     date: 'February 2026',
     changes: [
-      '🔥 Banwave Status indicator with API',
-      '🎮 Game detection for ScriptHub filtering',
-      '📊 Improved Dashboard stats',
+      '🔄 Fixed Auto-Update Installer - Properly launches after app closes',
+      '⚡ Uses detached spawn for reliable updates',
     ]
   },
   {
-    version: '1.0.7',
+    version: '1.1.2',
     date: 'February 2026',
     changes: [
-      '🔥 AutoExec now runs scripts on attach',
-      '🔥 Kill Roblox button added',
-      '🔥 Fixed Workspace AI chat',
+      '📂 Drag & Drop Scripts - Drop .lua/.txt files onto editor',
+      '🔍 Auto-Lint on file drop',
+      '🔧 Fixed Debug Console setting',
+    ]
+  },
+  {
+    version: '1.1.1',
+    date: 'February 2026',
+    changes: [
+      '🔥 Custom Update UI - Fire-themed in-app update modal',
+      '📥 In-App Updates - Downloads without opening browser',
     ]
   },
 ];
@@ -117,6 +124,32 @@ function Embers() {
 }
 
 export default function Home() {
+  const [recentUsers, setRecentUsers] = useState([]);
+  const [userCount, setUserCount] = useState(810230);
+
+  // Fetch recent users from API
+  useEffect(() => {
+    const fetchRecentUsers = async () => {
+      try {
+        const res = await fetch('/api/recent-users');
+        if (res.ok) {
+          const data = await res.json();
+          setRecentUsers(data.users || []);
+          if (data.totalUsers) setUserCount(data.totalUsers);
+        }
+      } catch (e) {
+        // Use placeholder data if API unavailable
+        setRecentUsers([
+          { username: 'Loading...', avatar: null, version: '1.1.8', time: 'Just now' },
+        ]);
+      }
+    };
+    fetchRecentUsers();
+    // Refresh every 10 seconds
+    const interval = setInterval(fetchRecentUsers, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="relative bg-black min-h-screen">
       {/* Fire background */}
@@ -218,6 +251,62 @@ export default function Home() {
               </motion.div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Live Users Section */}
+      <section className="relative py-16">
+        <div className="max-w-4xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="p-8 rounded-2xl bg-gradient-to-br from-orange-500/5 to-red-600/5 border border-orange-500/20"
+          >
+            <div className="text-center mb-8">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                <Activity className="inline-block w-6 h-6 mr-2 text-green-500 animate-pulse" />
+                100% Free & Keyless
+              </h2>
+              <p className="text-gray-400">
+                No keys, no payments, no restrictions. Infernix is completely free
+                to use and trusted by <span className="text-orange-500 font-bold">{userCount.toLocaleString()}</span> users worldwide.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <AnimatePresence mode="popLayout">
+                {recentUsers.slice(0, 5).map((user, index) => (
+                  <motion.div
+                    key={user.username + index}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="flex items-center justify-between p-4 rounded-xl bg-black/40 border border-white/5 hover:border-orange-500/30 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center overflow-hidden">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+                        ) : (
+                          <Flame className="w-5 h-5 text-white" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">{user.username} <span className="text-gray-500">used Infernix</span></p>
+                        <p className="text-gray-500 text-sm">
+                          <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                          v{user.version || '1.1.8'}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-gray-500 text-sm">{user.time || 'Recently'}</span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </motion.div>
         </div>
       </section>
 

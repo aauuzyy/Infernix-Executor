@@ -2,7 +2,8 @@
   flex: 1;
   padding: 24px;
   overflow-y: auto;
-  max-width: 600px;
+  width: 100%;
+  max-width: 100%;
 }
 
 .settings-title {
@@ -279,6 +280,41 @@
   border-color: var(--flame);
   color: white;
 }
+/* Background Blur Controls */
+.blur-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.blur-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 60px;
+}
+
+.blur-btn:hover {
+  border-color: var(--flame);
+  color: var(--text-primary);
+}
+
+.blur-btn.active {
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
+  border-color: var(--flame);
+  color: var(--flame);
+  box-shadow: 0 2px 8px rgba(255, 140, 50, 0.2);
+}
+
 
 /* Color Picker */
 .color-picker-row {
@@ -385,3 +421,30 @@ input[type="color"]::-webkit-color-swatch-wrapper {
   border: 1px solid var(--border);
 }
 
+
+/* Offline buttons */
+.folder-btn.offline-btn {
+  opacity: 0.5;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.folder-btn.offline-btn:hover {
+  border-color: var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  box-shadow: none;
+}
+
+.folder-btn .strikethrough {
+  text-decoration: line-through;
+}
+
+.offline-tag {
+  font-size: 9px;
+  padding: 2px 6px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-radius: 4px;
+  font-weight: 600;
+}

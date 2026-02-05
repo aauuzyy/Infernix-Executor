@@ -1,4 +1,4 @@
-.dashboard {
+﻿.dashboard {
   flex: 1;
   padding: 24px;
   overflow-y: auto;
@@ -140,8 +140,10 @@
 }
 
 .action-btn.fire:hover {
-  filter: brightness(1.1);
-  box-shadow: 0 4px 20px var(--accent-glow);
+  background: var(--fire-gradient) !important;
+  filter: brightness(1.15);
+  box-shadow: 0 4px 24px var(--accent-glow);
+  border-color: transparent !important;
 }
 
 /* Changelog Section */

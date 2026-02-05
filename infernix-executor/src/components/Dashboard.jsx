@@ -6,6 +6,51 @@ import { useTheme } from '../contexts/ThemeContext';
 // Changelog data
 const CHANGELOG = [
   {
+    version: '1.1.5',
+    date: 'February 2026',
+    changes: [
+      '🔄 Fixed Auto-Update Installer - Properly launches after app closes',
+      '⚡ Uses detached spawn for reliable installer execution',
+    ]
+  },
+  {
+    version: '1.1.4',
+    date: 'February 2026',
+    changes: [
+      '🔧 Fixed Premium Script Execution - Large scripts now work properly',
+      '📡 Improved ScriptHub Execution - Uses IPC for reliability',
+      '📦 Fixed HTTP headers for script payloads',
+    ]
+  },
+  {
+    version: '1.1.3',
+    date: 'February 2026',
+    changes: [
+      '🔄 Fixed Auto-Update - Updates now install correctly',
+      '⚡ Improved update process - App closes before installing',
+    ]
+  },
+  {
+    version: '1.1.2',
+    date: 'February 2026',
+    changes: [
+      '📂 Drag & Drop Scripts - Drop .lua/.txt files directly onto editor',
+      '🔍 Auto-Lint - Automatic syntax checking on file drop',
+      '🔧 Fixed Debug Console setting not being respected',
+      '⚡ One-click installer for cleaner setup experience',
+    ]
+  },
+  {
+    version: '1.1.1',
+    date: 'February 2026',
+    changes: [
+      '🔥 Custom Update UI - Fire-themed in-app update modal',
+      '📥 In-App Updates - Downloads and installs without browser',
+      '📊 Download Progress - Animated progress bar for updates',
+      '🔄 Fixed GitHub Redirect - Update detection now works properly',
+    ]
+  },
+  {
     version: '1.0.9',
     date: 'February 2026',
     changes: [

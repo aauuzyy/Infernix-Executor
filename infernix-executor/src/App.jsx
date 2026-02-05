@@ -9,6 +9,7 @@ import ClientManager from './components/ClientManager';
 import SettingsView from './components/SettingsView';
 import Assistant from './components/Assistant';
 import Notification from './components/Notification';
+import UpdateModal from './components/UpdateModal';
 import './App.css';
 
 function App() {
@@ -17,6 +18,9 @@ function App() {
   const [clients, setClients] = useState([]);
   const [executorVersion, setExecutorVersion] = useState('1.0.0');
   const [executionCount, setExecutionCount] = useState(0);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState(null);
+  const [isBlockingUpdate, setIsBlockingUpdate] = useState(false);
   const [startTime] = useState(Date.now());
 
   // Listen for client updates from main process
@@ -35,6 +39,28 @@ function App() {
     return () => {
       window.electronAPI?.removeClientsListener?.();
     };
+  }, []);
+
+  // Auto-check for updates on startup
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      if (window.electronAPI?.checkUpdates) {
+        try {
+          const result = await window.electronAPI.checkUpdates();
+          if (result.hasUpdate) {
+            setUpdateInfo(result);
+            setShowUpdateModal(true);
+            setIsBlockingUpdate(true); // Block app usage until updated
+          }
+        } catch (e) {
+          console.error('Update check failed:', e);
+        }
+      }
+    };
+    
+    // Check after a short delay to let the app initialize
+    const timer = setTimeout(checkForUpdates, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   // Lifted tab state for cross-component access
@@ -63,6 +89,7 @@ function App() {
     };
     loadSavedTabs();
   }, []);
+
 
   // Save tabs whenever they change (debounced)
   useEffect(() => {
@@ -235,9 +262,25 @@ function App() {
           </main>
         </div>
         <Notification notifications={notifications} onRemove={removeNotification} />
+        
+        {/* Update Modal - blocking when outdated */}
+        {showUpdateModal && (
+          <UpdateModal
+            isOpen={showUpdateModal}
+            onClose={() => {
+              if (!isBlockingUpdate) {
+                setShowUpdateModal(false);
+              }
+            }}
+            updateInfo={updateInfo}
+            isBlocking={isBlockingUpdate}
+          />
+        )}
       </div>
     </ThemeProvider>
   );
 }
 
 export default App;
+
+

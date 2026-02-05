@@ -99,3 +99,29 @@
 .collapse-btn .rotated {
   transform: rotate(180deg);
 }
+
+/* Offline/disabled nav items */
+.nav-item.offline {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav-item.offline:hover {
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.nav-label.strikethrough {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+.offline-badge {
+  font-size: 9px;
+  padding: 2px 6px;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border-radius: 4px;
+  margin-left: 4px;
+  font-weight: 600;
+}

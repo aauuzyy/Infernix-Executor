@@ -1,5 +1,5 @@
-﻿import { useState, useEffect, useRef } from 'react';
-import { Zap, RefreshCw, Power, User, Gamepad2, Hash, Check, AlertCircle, Loader, CheckSquare, Square, XCircle } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Zap, RefreshCw, Power, User, Gamepad2, Hash, Check, AlertCircle, Loader, CheckSquare, Square, XCircle, Unplug } from 'lucide-react';
 import './ClientManager.css';
 
 function ClientManager({ clients, onNotify }) {
@@ -138,6 +138,35 @@ function ClientManager({ clients, onNotify }) {
     }
   };
 
+
+  const handleUnattach = async () => {
+    if (selectedPids.size === 0) {
+      onNotify?.({
+        type: 'warning',
+        title: 'No Selection',
+        message: 'Select a client to unattach'
+      });
+      return;
+    }
+
+    try {
+      for (const pid of selectedPids) {
+        await window.electronAPI?.unattach(pid);
+      }
+      onNotify?.({
+        type: 'success',
+        title: 'Unattached',
+        message: 'Cleaned up ' + selectedPids.size + ' client(s) - UI destroyed'
+      });
+      setSelectedPids(new Set());
+    } catch (e) {
+      onNotify?.({
+        type: 'error',
+        title: 'Unattach Error',
+        message: e.message
+      });
+    }
+  };
   const handleKillAll = async () => {
     try {
       const result = await window.electronAPI?.killRoblox();
@@ -249,10 +278,16 @@ function ClientManager({ clients, onNotify }) {
             Attach
           </button>
           {selectedPids.size > 0 && (
-            <button className="cm-btn danger" onClick={killSelected}>
-              <XCircle size={14} />
-              Kill ({selectedPids.size})
-            </button>
+            <>
+              <button className="cm-btn warning" onClick={handleUnattach} title="Unattach - Cleans up all injected UI">
+                <Unplug size={14} />
+                Unattach ({selectedPids.size})
+              </button>
+              <button className="cm-btn danger" onClick={killSelected}>
+                <XCircle size={14} />
+                Kill ({selectedPids.size})
+              </button>
+            </>
           )}
           <button className="cm-btn danger" onClick={handleKillAll}>
             <Power size={14} />
@@ -336,7 +371,6 @@ function ClientManager({ clients, onNotify }) {
 }
 
 export default ClientManager;
-
 
 
 

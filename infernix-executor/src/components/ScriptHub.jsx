@@ -172,11 +172,31 @@ function ScriptHub({ onLoadScript, onExecuteScript, clients = [] }) {
   const handleExecuteScript = async (script) => {
     try {
       let scriptContent = script.script;
-      if (!scriptContent) { const data = window.electronAPI?.scriptbloxFetch ? await window.electronAPI.scriptbloxFetch(`script/${script.slug}`, {}) : await (await fetch(`https://scriptblox.com/api/script/${script.slug}`)).json(); scriptContent = data.script?.script; }
+      if (!scriptContent) { 
+        const data = window.electronAPI?.scriptbloxFetch 
+          ? await window.electronAPI.scriptbloxFetch(`script/${script.slug}`, {}) 
+          : await (await fetch(`https://scriptblox.com/api/script/${script.slug}`)).json(); 
+        scriptContent = data.script?.script; 
+      }
       if (scriptContent) {
         const attachedClients = clients.map(parseClient).filter(c => c.status === 3).map(c => c.pid);
-        try { await fetch('http://localhost:3110/o', { method: 'POST', headers: { 'Content-Type': 'text/plain', 'Clients': JSON.stringify(attachedClients) }, body: scriptContent }); }
-        catch { if (window.electronAPI?.execute) await window.electronAPI.execute(scriptContent, attachedClients); }
+        // Use IPC for reliable execution (handles large scripts properly)
+        if (window.electronAPI?.execute) {
+          await window.electronAPI.execute(scriptContent, attachedClients);
+        } else {
+          // Fallback to fetch with proper headers
+          const encoder = new TextEncoder();
+          const scriptBytes = encoder.encode(scriptContent);
+          await fetch('http://localhost:3110/o', { 
+            method: 'POST', 
+            headers: { 
+              'Content-Type': 'text/plain; charset=utf-8', 
+              'Content-Length': scriptBytes.length.toString(),
+              'clients': JSON.stringify(attachedClients) 
+            }, 
+            body: scriptContent 
+          });
+        }
       }
     } catch (err) { console.error('Failed to execute script:', err); }
   };

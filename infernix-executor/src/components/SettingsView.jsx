@@ -11,14 +11,58 @@ import WorkspaceEditor from './WorkspaceEditor';
 // Changelog data
 const CHANGELOG = [
   {
+    version: '1.1.5',
+    date: 'February 2026',
+    changes: [
+      '🔄 Fixed Auto-Update Installer - Now properly launches after app closes',
+      '⚡ Uses spawn with detached process for reliable updates',
+    ]
+  },
+  {
+    version: '1.1.4',
+    date: 'February 2026',
+    changes: [
+      '🔧 Fixed Premium Script Execution - Large scripts now execute properly',
+      '📡 Improved Script Hub Execution - Uses IPC for reliability',
+      '📦 Fixed Content-Length headers for script payloads',
+    ]
+  },
+  {
+    version: '1.1.3',
+    date: 'February 2026',
+    changes: [
+      '🔄 Fixed Auto-Update - Updates now install correctly',
+      '📂 Drag & Drop Scripts - Drop .lua/.txt files onto editor',
+      '🔍 Auto-Lint on file drop',
+    ]
+  },
+  {
+    version: '1.1.2',
+    date: 'February 2026',
+    changes: [
+      '📂 Drag & Drop Scripts - Drop .lua/.txt files directly onto editor',
+      '🔍 Auto-Lint - Automatic syntax checking on file drop',
+      '🔧 Fixed Debug Console setting not being respected',
+    ]
+  },
+  {
+    version: '1.1.1',
+    date: 'February 2026',
+    changes: [
+      '🔥 Custom Update UI - Fire-themed in-app update modal',
+      '📥 In-App Updates - Downloads without opening browser',
+      '🔄 Fixed GitHub API Redirect issue for updates',
+    ]
+  },
+  {
     version: '1.0.9',
     date: 'February 2026',
     changes: [
-      '?? Custom Themes - Dark, Light, Midnight modes',
-      '?? Accent Color Picker with presets',
-      '? RGB Color Shift animation',
-      '?? Fixed AutoExec to actually work on attach',
-      '? Auto-Attach with AutoExec support',
+      '🎨 Custom Themes - Dark, Light, Midnight modes',
+      '🎨 Accent Color Picker with presets',
+      '🌈 RGB Color Shift animation',
+      '🔧 Fixed AutoExec to actually work on attach',
+      '⚡ Auto-Attach with AutoExec support',
     ]
   },
   {
@@ -84,7 +128,7 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor }) {
   const [checkingUpdates, setCheckingUpdates] = useState(false);
   const [banwaveStatus, setBanwaveStatus] = useState(null);
   const [checkingBanwave, setCheckingBanwave] = useState(false);
-  const [currentVersion, setCurrentVersion] = useState('1.0.8');
+  const [currentVersion, setCurrentVersion] = useState('1.1.5');
 
   // Load saved settings on mount
   useEffect(() => {
