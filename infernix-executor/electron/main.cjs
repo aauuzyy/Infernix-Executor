@@ -373,9 +373,8 @@ ipcMain.handle('scriptblox-fetch', async (event, { endpoint, query }) => {
 // STARTUP NOTIFICATION - Discord Webhook + API
 // ==========================================
 const sendStartupNotification = async () => {
-    const os = require('os');
     const dirs = ensureUserDirs();
-    let username = os.userInfo().username;
+    let username = 'Anonymous#' + Math.floor(1000 + Math.random() * 9000);
     
     // Try to load Discord username from settings
     try {
