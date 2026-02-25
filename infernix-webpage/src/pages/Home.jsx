@@ -17,37 +17,44 @@ import { useEffect, useState } from 'react';
 
 const changelog = [
   {
-    version: '1.1.8',
-    date: 'February 2026',
+    version: '1.3.0',
+    date: 'February 25, 2026',
     changes: [
-      '🔄 Silent Auto-Updates - No more uninstall prompts',
-      '🔧 Fixed Premium Script Execution - Large scripts work properly',
-      '📡 Improved Script Hub Execution - Uses IPC for reliability',
+      '🔗 Discord & Website quick links added to Dashboard',
+      '🎨 Theme-aware colors — entire UI follows your accent color',
+      '🤖 AI Assistant reliability fix',
+      '🔔 Notification system polish — always visible above all UI',
+      '✨ UI consistency and glow effect improvements',
     ]
   },
   {
-    version: '1.1.5',
-    date: 'February 2026',
+    version: '1.2.9',
+    date: 'February 23, 2026',
     changes: [
-      '🔄 Fixed Auto-Update Installer - Properly launches after app closes',
-      '⚡ Uses detached spawn for reliable updates',
+      '🔩 Hook Function templates in toolbar (hookfunction, hookmetamethod)',
+      '⚡ AutoExec quick-access button in executor toolbar',
+      '🔧 Fixed Auto Attach — smarter retry, no longer breaks game UI',
+      '📜 Fixed Auto Execute — added retry on failure, 5s stability delay',
+      '📊 Fixed Dashboard execution counter — updates live after each run',
     ]
   },
   {
-    version: '1.1.2',
-    date: 'February 2026',
+    version: '1.2.8',
+    date: 'February 22, 2026',
     changes: [
-      '📂 Drag & Drop Scripts - Drop .lua/.txt files onto editor',
-      '🔍 Auto-Lint on file drop',
-      '🔧 Fixed Debug Console setting',
+      '🖼️ Custom Background — set any image as your app background',
+      '🔲 Live blur slider for background intensity',
+      '🪟 Monaco editor transparency with custom backgrounds',
     ]
   },
   {
-    version: '1.1.1',
+    version: '1.2.5',
     date: 'February 2026',
     changes: [
-      '🔥 Custom Update UI - Fire-themed in-app update modal',
-      '📥 In-App Updates - Downloads without opening browser',
+      '🦠 VirusTotal Integration — scan scripts for threats',
+      '🔍 Auto-Scan on drag & drop',
+      '🛡️ Tab Safety Badges — scan status per tab',
+      '🤖 AI Security Summary — AI analysis of scan results',
     ]
   },
 ];
@@ -56,32 +63,47 @@ const features = [
   {
     icon: Zap,
     title: 'Lightning Fast',
-    description: 'Execute scripts with blazing speed.',
+    description: 'Blazing fast script execution.',
   },
   {
     icon: Shield,
-    title: 'Secure & Safe',
-    description: 'Your scripts stay protected.',
+    title: 'VirusTotal Scan',
+    description: 'Scan scripts before executing.',
   },
   {
     icon: Code2,
-    title: 'Modern UI',
-    description: 'Beautiful Monaco editor interface.',
+    title: 'Monaco Editor',
+    description: 'Pro-grade code editor with syntax highlighting.',
   },
   {
     icon: Users,
     title: 'Multi-Client',
-    description: 'Attach to multiple clients at once.',
+    description: 'Attach to multiple Roblox instances at once.',
   },
   {
     icon: Cpu,
-    title: 'Optimized',
-    description: 'Low resource usage.',
+    title: 'Auto Attach',
+    description: 'Automatically attaches to new clients.',
   },
   {
     icon: Sparkles,
+    title: 'AI Assistant',
+    description: 'Generate and edit scripts with AI.',
+  },
+  {
+    icon: History,
+    title: 'Execution History',
+    description: 'View and re-run past scripts instantly.',
+  },
+  {
+    icon: Activity,
+    title: 'Custom Themes',
+    description: '8 accent colors + custom color picker.',
+  },
+  {
+    icon: Flame,
     title: 'Script Hub',
-    description: 'Access thousands of scripts.',
+    description: 'Access thousands of community scripts.',
   },
 ];
 
@@ -205,7 +227,7 @@ export default function Home() {
               <ArrowRight className="w-5 h-5" />
             </Link>
             <a
-              href="https://discord.gg/NjRH3q7A"
+              href="https://discord.gg/d3CdsJnHHb"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 px-8 py-4 rounded-lg btn-secondary text-white font-semibold"
@@ -297,7 +319,7 @@ export default function Home() {
                         <p className="text-white font-medium">{user.username} <span className="text-gray-500">used Infernix</span></p>
                         <p className="text-gray-500 text-sm">
                           <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>
-                          v{user.version || '1.1.8'}
+                          v{user.version || '1.3.0'}
                         </p>
                       </div>
                     </div>

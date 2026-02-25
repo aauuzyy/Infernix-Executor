@@ -14,77 +14,95 @@ import {
 const features = [
   {
     icon: Users,
-    title: 'Growing Community',
-    description: 'Join our Discord for support.',
+    title: 'Multi-Client',
+    description: 'Attach to multiple Roblox instances.',
   },
   {
     icon: Code2,
-    title: 'Multi Attach',
-    description: 'Attach to multiple clients.',
+    title: 'Monaco Editor',
+    description: 'Pro-grade editor with syntax highlighting.',
   },
   {
     icon: Zap,
-    title: 'Performance',
-    description: 'Fast and lightweight.',
+    title: 'AI Assistant',
+    description: 'Generate and edit scripts with AI.',
   },
 ];
 
 const changelog = [
   {
-    version: '1.1.8',
-    date: 'February 2026',
+    version: '1.3.0',
+    date: 'February 25, 2026',
     type: 'release',
     changes: [
-      'Silent Auto-Updates - No more uninstall prompts',
-      'Fixed Premium Script Execution - Large scripts work properly',
-      'Drag & Drop Scripts - Drop files onto editor',
-      'In-App Update System - Downloads without browser',
-      'Custom Themes with accent color picker',
+      'Discord & Website quick links on Dashboard',
+      'Theme-aware colors — all UI glows follow your accent color',
+      'AI Assistant reliability fix',
+      'Notification system — always visible above all overlays',
+      'UI polish and glow improvements',
+      'Bug fixes and stability improvements',
     ],
   },
   {
-    version: '1.0.8',
-    date: 'February 2026',
+    version: '1.2.9',
+    date: 'February 23, 2026',
     type: 'release',
     changes: [
-      'AutoExec now runs scripts on attach',
-      'Kill Roblox button in Dashboard and Settings',
-      'Fixed Workspace AI chat scrolling',
-      'Fixed chat message bubbles display',
-      'All settings buttons now functional',
+      'Hook Function templates in toolbar',
+      'AutoExec quick-access button in executor',
+      'Fixed Auto Attach — smarter retry logic',
+      'Fixed Auto Execute — retry on failure + 5s stability delay',
+      'Fixed Dashboard execution counter (live updates)',
+      'Fixed GIF backgrounds — animated GIFs blur correctly',
     ],
   },
   {
-    version: '1.0.6',
-    date: 'February 2026',
+    version: '1.2.8',
+    date: 'February 22, 2026',
     type: 'release',
     changes: [
-      'NEW: AutoExec Manager - Select tabs and add to autoexec',
-      'NEW: Workspace Script Editor with AI assistance',
-      'AI Assistant now helps EDIT scripts, not rewrite',
-      'Script Tools: Loop, Function, Event, GUI, ESP templates',
-      'One-click insert code snippets from AI',
-      'Enhanced folder management UI',
-      'Fixed Roblox detection in packaged app',
+      'Custom Background — any image as app background',
+      'Live blur intensity slider',
+      'Monaco editor transparency with custom backgrounds',
+      'Background persists across restarts',
     ],
   },
   {
-    version: '1.0.4',
+    version: '1.2.5',
     date: 'February 2026',
     type: 'release',
     changes: [
-      'Initial public release',
-      'Monaco editor integration',
-      'Multi-client support',
-      'Script hub with popular scripts',
-      'Modern dark theme UI',
+      'VirusTotal Integration — scan scripts for threats',
+      'Auto-Scan on drag & drop',
+      'Tab Safety Badges — scan status on each tab',
+      'AI Security Summary — AI analysis of scan results',
+    ],
+  },
+  {
+    version: '1.2.4',
+    date: 'February 2026',
+    type: 'release',
+    changes: [
+      'Dynamic Syntax Colors — editor colors adapt to accent',
+      'Execution History Panel — view and re-run past scripts',
+      'Accent-based bracket and parentheses coloring',
+    ],
+  },
+  {
+    version: '1.2.3',
+    date: 'February 2026',
+    type: 'release',
+    changes: [
+      'Custom Themes — 8 accent color presets + color picker',
+      'Auto-Update System — detects new releases from GitHub',
+      'ScriptHub virtualization — smooth with 1000s of scripts',
     ],
   },
 ];
 
 export default function Download() {
   const handleDownload = () => {
-    window.open('https://github.com/aauuzyy/Xeno-x-Infernix/releases/latest', '_blank');
+    window.open('https://link-target.net/2362148/t1FxoExXLLZX', '_blank');
   };
 
   return (
@@ -136,8 +154,8 @@ export default function Download() {
                 <Flame className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Infernix 1.1.8</h2>
-                <p className="text-gray-500 text-sm">February 2026  Latest Release</p>
+                <h2 className="text-2xl font-bold text-white">Infernix v1.3.0</h2>
+                <p className="text-gray-500 text-sm">February 25, 2026 — Latest Release</p>
               </div>
             </div>
 
@@ -184,7 +202,7 @@ export default function Download() {
           <div className="p-6 rounded-2xl bg-white/5 border border-orange-500/10">
             <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
               <Flame className="w-4 h-4 text-orange-400" />
-              What's New in 1.1.8
+              What's New in v1.3.0
             </h3>
             <div className="space-y-2">
               {changelog[0].changes.slice(0, 5).map((change, index) => (
@@ -241,7 +259,7 @@ export default function Download() {
           <p className="text-gray-500 text-sm">
             Need help?{' '}
             <a
-              href="https://discord.gg/NjRH3q7A"
+              href="https://discord.gg/d3CdsJnHHb"
               target="_blank"
               rel="noopener noreferrer"
               className="text-orange-400 hover:text-orange-300 inline-flex items-center gap-1"
