@@ -1,5 +1,24 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import DevPanel from './components/DevPanel';
+import BlacklistOverlay from './components/BlacklistOverlay';
+
+function BackgroundOverlay() {
+  const { customBackground, backgroundBlur } = useTheme();
+  if (!customBackground) return null;
+  // Use an <img> so animated GIFs remain animated and blur works correctly
+  const blurPx = (backgroundBlur / 100) * 20;
+  return (
+    <div className="custom-bg-overlay">
+      <img
+        src={customBackground}
+        alt=""
+        className="custom-bg-img"
+        style={{ filter: blurPx > 0 ? `blur(${blurPx}px)` : 'none' }}
+      />
+    </div>
+  );
+}
 import TitleBar from './components/TitleBar';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -23,18 +42,95 @@ function App() {
   const [isBlockingUpdate, setIsBlockingUpdate] = useState(false);
   const [startTime] = useState(Date.now());
 
+  // Dev Mode state
+  const [devMode, setDevMode]               = useState(false);
+  const [devTransitioning, setDevTransitioning] = useState(false);
+  const [devOwner, setDevOwner]             = useState('');
+  const [isDevUser, setIsDevUser]           = useState(false); // persists after closing panel
+  const [blacklistData, setBlacklistData]   = useState(null); // blacklist enforcement overlay
+  // Use a ref so the latest devMode value is always accessible in callbacks
+  const devModeRef = useRef(false);
+
+  // Listen for dev mode changes — broadcast every 200ms with clients update
+  useEffect(() => {
+    const handler = (data) => {
+      const wasActive = devModeRef.current;
+      devModeRef.current = data.active;
+      if (data.active) {
+        // Mark this session as dev-eligible (persists when panel is closed)
+        setIsDevUser(true);
+        setDevOwner(data.owner || '');
+        if (!wasActive) {
+          // First time: glitch transition then show panel
+          setDevTransitioning(true);
+          setTimeout(() => {
+            setDevTransitioning(false);
+            setDevMode(true);
+          }, 700);
+        }
+      } else if (!data.active) {
+        setIsDevUser(false);
+        if (wasActive) {
+          setDevMode(false);
+        }
+      }
+    };
+    window.electronAPI?.onDevModeChange?.(handler);
+    return () => window.electronAPI?.removeDevModeListener?.();
+  }, []); // mount once — ref tracks latest value so no stale closure
+
+  // Listen for blacklist enforcement — show scary overlay before app quits
+  useEffect(() => {
+    window.electronAPI?.onBlacklistTriggered?.((data) => {
+      setBlacklistData(data);
+    });
+    return () => window.electronAPI?.removeBlacklistListener?.();
+  }, []);
+
   // Listen for client updates from main process
   useEffect(() => {
     // Add smoothing to avoid flicker when main briefly reports empty
     const lastNonEmptyRef = { clients: [], at: 0 };
+    // Sticky placeId map: pid -> last known non-zero placeId
+    const stickyPlaceId = new Map();
+
+    const stabiliseClients = (list) => {
+      return list.map(client => {
+        const isArr = Array.isArray(client);
+        const pid   = String(isArr ? client[0] : client.pid);
+        const rawPlaceId = isArr ? client[5] : (client.placeId || client.PlaceId || 0);
+        const status = isArr ? client[3] : client.status;
+
+        // If attached and placeId is non-zero, remember it
+        if (status === 3 && rawPlaceId && Number(rawPlaceId) > 0) {
+          stickyPlaceId.set(pid, rawPlaceId);
+        }
+
+        // Substitute sticky placeId if current is 0/null
+        const stablePlaceId = (rawPlaceId && Number(rawPlaceId) > 0)
+          ? rawPlaceId
+          : (stickyPlaceId.get(pid) || rawPlaceId);
+
+        // Clean up sticky entry when client disconnects
+        if (status !== 3) stickyPlaceId.delete(pid);
+
+        if (isArr) {
+          const copy = [...client];
+          copy[5] = stablePlaceId;
+          return copy;
+        }
+        return { ...client, placeId: stablePlaceId, PlaceId: stablePlaceId };
+      });
+    };
 
     const updateClients = (incoming) => {
       const list = incoming || [];
       const now = Date.now();
       if (Array.isArray(list) && list.length > 0) {
-        lastNonEmptyRef.clients = list;
+        const stable = stabiliseClients(list);
+        lastNonEmptyRef.clients = stable;
         lastNonEmptyRef.at = now;
-        setClients(list);
+        setClients(stable);
         return;
       }
 
@@ -42,6 +138,7 @@ function App() {
       if (now - lastNonEmptyRef.at < 1500 && Array.isArray(lastNonEmptyRef.clients) && lastNonEmptyRef.clients.length > 0) {
         setClients(lastNonEmptyRef.clients);
       } else {
+        stickyPlaceId.clear();
         setClients([]);
       }
     };
@@ -62,33 +159,8 @@ function App() {
     };
   }, []);
 
-  // Fallback polling for clients in case the broadcast listener misses an update
-  useEffect(() => {
-    let interval = null;
-    const pollClients = async () => {
-      try {
-        if (window.electronAPI?.getClients) {
-          const list = await window.electronAPI.getClients();
-          if (list && Array.isArray(list)) {
-            setClients(list);
-          }
-        }
-      } catch (e) {
-        // ignore polling errors
-      }
-    };
-
-    // Start polling every 1s
-    if (window.electronAPI?.getClients) {
-      interval = setInterval(pollClients, 1000);
-      // initial poll
-      pollClients();
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, []);
+  // NOTE: Removed fallback polling — it called getClients() which returns raw
+  // addon data without placeId merge, causing the client list to flicker every 1s.
 
   // Auto-check for updates on startup
   useEffect(() => {
@@ -110,6 +182,18 @@ function App() {
     // Check after a short delay to let the app initialize
     const timer = setTimeout(checkForUpdates, 1500);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Live execution count — incremented when main process broadcasts a successful execution
+  useEffect(() => {
+    if (window.electronAPI?.onExecutionOccurred) {
+      window.electronAPI.onExecutionOccurred((data) => {
+        setExecutionCount(prev => prev + 1);
+      });
+    }
+    return () => {
+      window.electronAPI?.removeExecutionListener?.();
+    };
   }, []);
 
   // Lifted tab state for cross-component access
@@ -201,6 +285,9 @@ function App() {
     ));
   };
 
+  // Alias used by Assistant to write generated code into a tab
+  const handleWriteToTab = handleCodeChange;
+
   // Update tab scan status for safety badges
   const handleUpdateTabScan = (tabId, scanStatus, scanResult = null) => {
     setTabs(tabs.map(t =>
@@ -277,6 +364,7 @@ function App() {
             onWriteToTab={handleWriteToTab}
             onSwitchToExecutor={handleSwitchToExecutor}
             onNotify={addNotification}
+            devMode={devMode}
           />
         );
       default:
@@ -299,7 +387,8 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className="app">
+      <BackgroundOverlay />
+      <div className={`app ${devTransitioning ? 'dev-mode-transition' : ''}`}>
         <TitleBar />
         <div className="app-body">
           <Sidebar
@@ -313,8 +402,6 @@ function App() {
             {renderView()}
           </main>
         </div>
-        <Notification notifications={notifications} onRemove={removeNotification} />
-        
         {/* Update Modal - blocking when outdated */}
         {showUpdateModal && (
           <UpdateModal
@@ -329,6 +416,40 @@ function App() {
           />
         )}
       </div>
+
+      {/* Dev Panel — rendered outside .app so it overlays everything */}
+      {devMode && (
+        <DevPanel
+          clients={clients}
+          executionCount={executionCount}
+          onViewChange={setActiveView}
+          onClose={() => setDevMode(false)}
+          onNotify={addNotification}
+          tabs={tabs}
+          onWriteToTab={handleWriteToTab}
+          onSwitchToExecutor={handleSwitchToExecutor}
+          owner={devOwner}
+        />
+      )}
+
+      {/* Notifications — rendered outside .app so they appear above DevPanel overlay */}
+      <Notification notifications={notifications} onRemove={removeNotification} />
+
+      {/* Blacklist enforcement overlay — covers everything */}
+      {blacklistData && <BlacklistOverlay data={blacklistData} />}
+
+      {/* Floating re-enter button — visible only for dev users when panel is closed */}
+      {isDevUser && !devMode && !devTransitioning && (
+        <button
+          className="dev-reenter-btn"
+          title="Re-enter Dev Mode"
+          onClick={() => setDevMode(true)}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          </svg>
+        </button>
+      )}
     </ThemeProvider>
   );
 }
