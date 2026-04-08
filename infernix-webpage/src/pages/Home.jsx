@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ArrowRight,
   Zap,
@@ -11,11 +11,21 @@ import {
   Flame,
   Sparkles,
   History,
-  Activity
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
+import { StaggerContainer, StaggerItem, BlurIn } from '../components/Animations';
 
 const changelog = [
+  {
+    version: '1.3.1',
+    date: 'April 8, 2026',
+    changes: [
+      '🔥 Xeno DLL updated for latest Roblox version',
+      '⚡ Removed Military AI tab for a cleaner interface',
+      '🛠️ Version reporting fixed for accurate update webhooks',
+      '✨ UI refinements and stability improvements',
+    ]
+  },
   {
     version: '1.3.0',
     date: 'February 25, 2026',
@@ -112,7 +122,7 @@ function Embers() {
   const [embers, setEmbers] = useState([]);
   
   useEffect(() => {
-    const emberCount = 20;
+    const emberCount = 28;
     const newEmbers = [];
     for (let i = 0; i < emberCount; i++) {
       newEmbers.push({
@@ -146,81 +156,64 @@ function Embers() {
 }
 
 export default function Home() {
-  const [recentUsers, setRecentUsers] = useState([]);
-  const [userCount, setUserCount] = useState(0);
-
-  // Fetch recent users from API
-  useEffect(() => {
-    const fetchRecentUsers = async () => {
-      try {
-        const res = await fetch('/api/recent-users');
-        if (res.ok) {
-          const data = await res.json();
-          setRecentUsers(data.users || []);
-          if (data.totalUsers) setUserCount(data.totalUsers);
-        }
-      } catch (e) {
-        // Use placeholder data if API unavailable
-        setRecentUsers([
-          { username: 'Loading...', avatar: null, version: '1.1.8', time: 'Just now' },
-        ]);
-      }
-    };
-    fetchRecentUsers();
-    // Refresh every 10 seconds
-    const interval = setInterval(fetchRecentUsers, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <div className="relative bg-black min-h-screen">
       {/* Fire background */}
       <div className="fire-bg" />
       <Embers />
-      
-      {/* Hero Section */}
+
+      {/* ── Hero ───────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center justify-center pt-16">
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-          {/* Logo */}
           <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, type: 'spring' }}
-            className="w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center glow-fire"
+            initial={{ scale: 0, rotate: -180, filter: 'blur(20px)' }}
+            animate={{ scale: 1, rotate: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.9, type: 'spring', stiffness: 70 }}
+            className="w-28 h-28 mx-auto mb-10 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center glow-fire"
           >
-            <Flame className="w-14 h-14 text-white" />
+            <Flame className="w-16 h-16 text-white" />
           </motion.div>
 
-          {/* Heading */}
           <motion.h1
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-5xl md:text-7xl font-bold mb-6 text-white"
+            transition={{ duration: 0.7, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="text-6xl md:text-8xl font-black mb-6 tracking-tight"
           >
-            <span className="gradient-text">Infernix</span>
+            <span className="shimmer-text">Infernix</span>
           </motion.h1>
 
-          {/* Subtitle */}
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="text-lg text-gray-400 max-w-xl mx-auto mb-10"
+            initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+            transition={{ duration: 0.7, delay: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto mb-8 leading-relaxed"
           >
-            The next-generation Roblox executor. Powerful, secure, and incredibly fast.
+            The next-generation Roblox executor.{' '}
+            <span className="text-orange-400">Powerful</span>,{' '}
+            <span className="text-orange-400">secure</span>, and{' '}
+            <span className="text-orange-400">incredibly fast</span>.
           </motion.p>
 
-          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, delay: 0.52 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/25 mb-10"
+          >
+            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+            <span className="text-sm text-orange-300 font-semibold tracking-wide">v1.3.1 — Now Available</span>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
+            transition={{ duration: 0.6, delay: 0.65 }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <Link
               to="/download"
-              className="flex items-center gap-2 px-8 py-4 rounded-lg btn-primary text-white font-semibold"
+              className="flex items-center gap-2 px-8 py-4 rounded-xl btn-primary text-white font-bold text-base"
             >
               <Download className="w-5 h-5" />
               Download Now
@@ -230,7 +223,7 @@ export default function Home() {
               href="https://discord.gg/d3CdsJnHHb"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-8 py-4 rounded-lg btn-secondary text-white font-semibold"
+              className="flex items-center gap-2 px-8 py-4 rounded-xl btn-secondary text-white font-bold text-base"
             >
               Join Discord
             </a>
@@ -238,136 +231,80 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="relative py-24">
+      {/* ── Divider ───────────────────────────────────────── */}
+      <div className="relative z-10 max-w-4xl mx-auto px-6 py-2">
+        <div className="section-divider" />
+      </div>
+
+      {/* ── Features ───────────────────────────────────────── */}
+      <section className="relative py-28 z-10">
         <div className="max-w-5xl mx-auto px-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+          <BlurIn className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
               Why <span className="gradient-text">Infernix</span>?
             </h2>
-            <p className="text-gray-500">
-              Built with everything you need.
+            <p className="text-gray-500 text-lg">
+              Built with everything you need, nothing you don't.
             </p>
-          </motion.div>
+          </BlurIn>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="p-6 rounded-xl bg-white/5 border border-orange-500/10 hover:border-orange-500/30 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mb-4">
-                  <feature.icon className="w-5 h-5 text-white" />
+          <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {features.map((feature) => (
+              <StaggerItem key={feature.title}>
+                <div className="p-6 rounded-2xl bg-white/[0.03] border border-orange-500/10 card-hover h-full">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mb-4">
+                    <feature.icon className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-white font-bold mb-1 text-sm">{feature.title}</h3>
+                  <p className="text-gray-600 text-xs leading-relaxed">{feature.description}</p>
                 </div>
-                <h3 className="text-white font-semibold mb-1">{feature.title}</h3>
-                <p className="text-gray-500 text-sm">{feature.description}</p>
-              </motion.div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerContainer>
         </div>
       </section>
 
-      {/* Live Users Section */}
-      <section className="relative py-16">
-        <div className="max-w-4xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="p-8 rounded-2xl bg-gradient-to-br from-orange-500/5 to-red-600/5 border border-orange-500/20"
-          >
-            <div className="text-center mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                <Activity className="inline-block w-6 h-6 mr-2 text-green-500 animate-pulse" />
-                100% Free & Keyless
-              </h2>
-              <p className="text-gray-400">
-                No keys, no payments, no restrictions. Infernix is completely free
-                to use and trusted by <span className="text-orange-500 font-bold">{userCount.toLocaleString()}</span> users worldwide.
-              </p>
-            </div>
+      {/* ── Divider ───────────────────────────────────────── */}
+      <div className="relative z-10 max-w-4xl mx-auto px-6 py-2">
+        <div className="section-divider" />
+      </div>
 
-            <div className="space-y-3">
-              <AnimatePresence mode="popLayout">
-                {recentUsers.slice(0, 5).map((user, index) => (
-                  <motion.div
-                    key={user.username + index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="flex items-center justify-between p-4 rounded-xl bg-black/40 border border-white/5 hover:border-orange-500/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center overflow-hidden">
-                        {user.avatar ? (
-                          <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
-                        ) : (
-                          <Flame className="w-5 h-5 text-white" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-white font-medium">{user.username} <span className="text-gray-500">used Infernix</span></p>
-                        <p className="text-gray-500 text-sm">
-                          <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>
-                          v{user.version || '1.3.0'}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-gray-500 text-sm">{user.time || 'Recently'}</span>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Changelog Section */}
-      <section className="relative py-24">
-        <div className="max-w-4xl mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              <History className="inline-block w-8 h-8 mr-2 text-orange-500" />
+      {/* ── Changelog ──────────────────────────────────────── */}
+      <section className="relative py-28 z-10">
+        <div className="max-w-3xl mx-auto px-6">
+          <BlurIn className="text-center mb-14">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
+              <History className="inline-block w-9 h-9 mr-3 text-orange-500 mb-1" />
               Latest <span className="gradient-text">Updates</span>
             </h2>
             <p className="text-gray-500">See what's new in Infernix</p>
-          </motion.div>
+          </BlurIn>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {changelog.map((release, index) => (
               <motion.div
                 key={release.version}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="p-6 rounded-xl bg-white/5 border border-orange-500/20 hover:border-orange-500/40 transition-all"
+                initial={{ opacity: 0, x: -30, filter: 'blur(8px)' }}
+                whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ delay: index * 0.08, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                className="p-6 rounded-2xl bg-white/[0.03] border border-orange-500/15 card-hover"
               >
-                <div className="flex items-center gap-4 mb-4">
-                  <span className="px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-red-600 text-white text-sm font-bold">
+                <div className="flex items-center gap-3 mb-4 flex-wrap">
+                  <span className="px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-red-600 text-white text-xs font-black tracking-wide">
                     v{release.version}
                   </span>
-                  <span className="text-gray-500 text-sm">{release.date}</span>
+                  {index === 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold">
+                      Latest
+                    </span>
+                  )}
+                  <span className="text-gray-600 text-sm ml-auto">{release.date}</span>
                 </div>
                 <ul className="space-y-2">
                   {release.changes.map((change, i) => (
-                    <li key={i} className="text-gray-300 text-sm flex items-start gap-2">
-                      <span className="text-orange-500 mt-1">•</span>
+                    <li key={i} className="text-gray-400 text-sm flex items-start gap-2">
+                      <span className="text-orange-600 mt-0.5 flex-shrink-0">›</span>
                       {change}
                     </li>
                   ))}
@@ -378,31 +315,39 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="relative py-24">
+      {/* ── Divider ───────────────────────────────────────── */}
+      <div className="relative z-10 max-w-4xl mx-auto px-6 py-2">
+        <div className="section-divider" />
+      </div>
+
+      {/* ── CTA ────────────────────────────────────────────── */}
+      <section className="relative py-28 z-10">
         <div className="max-w-3xl mx-auto px-6 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="p-12 rounded-2xl bg-gradient-to-br from-orange-500/10 to-red-600/10 border border-orange-500/20"
-          >
-            <Flame className="w-12 h-12 text-orange-500 mx-auto mb-6" />
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Ready to Get Started?
-            </h2>
-            <p className="text-gray-400 mb-8">
-              Download Infernix now and experience the difference.
-            </p>
-            <Link
-              to="/download"
-              className="inline-flex items-center gap-2 px-8 py-4 rounded-lg btn-primary text-white font-semibold"
-            >
-              <Download className="w-5 h-5" />
-              Download Infernix
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </motion.div>
+          <BlurIn>
+            <div className="p-14 rounded-3xl bg-gradient-to-br from-orange-500/8 to-red-600/8 border border-orange-500/20">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-8 glow-fire"
+              >
+                <Flame className="w-9 h-9 text-white" />
+              </motion.div>
+              <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
+                Ready to <span className="gradient-text">Get Started</span>?
+              </h2>
+              <p className="text-gray-500 text-lg mb-10 max-w-lg mx-auto">
+                Download Infernix now and experience the difference.
+              </p>
+              <Link
+                to="/download"
+                className="inline-flex items-center gap-3 px-10 py-4 rounded-xl btn-primary text-white font-bold text-base"
+              >
+                <Download className="w-5 h-5" />
+                Download Now — Free
+                <ArrowRight className="w-5 h-5" />
+              </Link>
+            </div>
+          </BlurIn>
         </div>
       </section>
     </div>

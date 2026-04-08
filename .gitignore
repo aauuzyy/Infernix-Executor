@@ -1,6 +1,14 @@
 # Ignore everything by default
 /*
 
+# Sensitive env files (cookies, keys)
+.env
+*.env
+**/.env
+
+# RL agent saved models
+rl-agent/
+
 # Keep repo metadata files
 !.gitignore
 !README.md

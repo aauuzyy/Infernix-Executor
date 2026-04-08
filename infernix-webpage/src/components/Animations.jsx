@@ -152,6 +152,49 @@ export function FloatingElement({ children, className = '', delay = 0 }) {
   );
 }
 
+export function BlurIn({ children, delay = 0, className = '' }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, filter: 'blur(20px)', y: 16 }}
+      animate={isInView ? { opacity: 1, filter: 'blur(0px)', y: 0 } : {}}
+      transition={{ duration: 0.85, delay, ease: [0.22, 1, 0.36, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export function TextReveal({ text, className = '', delay = 0 }) {
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, margin: '-60px' });
+  const words = text.split(' ');
+
+  return (
+    <span ref={ref} className={className} style={{ display: 'inline' }}>
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
+          animate={isInView ? { opacity: 1, y: 0, filter: 'blur(0px)' } : {}}
+          transition={{
+            duration: 0.6,
+            delay: delay + i * 0.08,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          style={{ display: 'inline-block', marginRight: '0.28em' }}
+        >
+          {word}
+        </motion.span>
+      ))}
+    </span>
+  );
+}
+
 export function TypeWriter({ text, className = '' }) {
   return (
     <motion.span className={className}>
