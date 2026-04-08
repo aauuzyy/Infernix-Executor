@@ -11,6 +11,7 @@ import {
   Flame,
   Sparkles,
   History,
+  Activity,
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { StaggerContainer, StaggerItem, BlurIn } from '../components/Animations';
