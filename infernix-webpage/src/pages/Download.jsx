@@ -117,11 +117,11 @@ export default function Download() {
   };
 
   return (
-    <div className="relative bg-black min-h-screen pt-24 pb-20">
+    <div className="relative bg-black min-h-screen pt-20 pb-16">
 
       <div className="relative z-10 max-w-5xl mx-auto px-6">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -134,7 +134,7 @@ export default function Download() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-4xl md:text-5xl font-bold mb-4 text-white"
+            className="text-3xl md:text-4xl font-bold mb-3 text-white"
           >
             Download <span className="gradient-text">Infernix</span>
           </motion.h1>
@@ -153,10 +153,10 @@ export default function Download() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="grid lg:grid-cols-3 gap-6 mb-12"
+          className="grid lg:grid-cols-3 gap-5 mb-8"
         >
           {/* Download Section */}
-          <div className="lg:col-span-2 p-8 rounded-2xl bg-white/5 border border-white/5">
+          <div className="lg:col-span-2 p-6 rounded-2xl bg-white/5 border border-white/5">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-16 h-16 rounded-full bg-black border border-white/15 flex items-center justify-center">
                 <Flame className="w-8 h-8 text-white" />
@@ -207,7 +207,7 @@ export default function Download() {
           </div>
 
           {/* Latest Updates */}
-          <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
+          <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
             <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
               What's New in v1.3.1
             </h3>

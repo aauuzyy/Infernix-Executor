@@ -64,19 +64,19 @@ const technologies = [
 
 export default function Credits() {
   return (
-    <div className="relative bg-black min-h-screen pt-24 pb-20">
+    <div className="relative bg-black min-h-screen pt-20 pb-16">
 
       <div className="relative z-10 max-w-5xl mx-auto px-6">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
+          className="text-center mb-8"
         >
-          <div className="w-16 h-16 rounded-full bg-black border border-white/15 flex items-center justify-center mx-auto mb-6">
+          <div className="w-14 h-14 rounded-full bg-black border border-white/15 flex items-center justify-center mx-auto mb-5">
             <Heart className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-3">
+          <h1 className="text-3xl md:text-4xl font-bold mb-3">
             <span className="gradient-text">Credits</span>
           </h1>
           <p className="text-gray-500">
@@ -90,16 +90,16 @@ export default function Credits() {
             The <span className="gradient-text">Team</span>
           </h2>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {team.map((member, index) => (
               <motion.div
                 key={member.name}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="p-5 rounded-xl bg-white/5 border border-white/5 text-center"
+                className="p-4 rounded-xl bg-white/5 border border-white/5 text-center"
               >
-                <div className="w-12 h-12 rounded-full bg-white/[0.08] flex items-center justify-center mx-auto mb-3">
+                <div className="w-10 h-10 rounded-full bg-white/[0.08] flex items-center justify-center mx-auto mb-3">
                   <member.icon className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="font-semibold text-white text-sm mb-1">{member.name}</h3>
@@ -115,7 +115,7 @@ export default function Credits() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="mb-12"
+          className="mb-8"
         >
           <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
             <div className="flex items-center justify-center gap-3 mb-6">
@@ -189,7 +189,7 @@ export default function Credits() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mb-12"
+          className="mb-8"
         >
           <h2 className="text-lg font-bold text-white mb-4 text-center">Built With</h2>
           
