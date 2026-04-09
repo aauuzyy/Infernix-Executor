@@ -45,7 +45,7 @@ const features = [
 
 export default function About() {
   return (
-    <div className="relative bg-black min-h-screen pt-20 pb-16">
+    <div className="relative min-h-screen pt-20 pb-16">
 
       <div className="relative z-10 max-w-4xl mx-auto px-6">
         {/* Header */}

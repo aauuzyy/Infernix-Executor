@@ -119,7 +119,7 @@ const features = [
 
 export default function Home() {
   return (
-    <div className="relative bg-black min-h-screen">
+    <div className="relative min-h-screen">
 
       {/* ── Hero ───────────────────────────────────────────── */}
       <section className="relative pt-32 pb-16 z-10">
