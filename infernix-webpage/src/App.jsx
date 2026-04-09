@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ContextMenu from './components/ContextMenu';
 import Home from './pages/Home';
 import Download from './pages/Download';
 import About from './pages/About';
@@ -93,6 +94,7 @@ function App() {
       <div className="min-h-screen bg-black flex flex-col">
         <ScrollToTop />
         <CursorGlow />
+        <ContextMenu />
         <div className="grid-bg" aria-hidden="true" />
         <Navbar />
         <main className="flex-1 relative z-10">

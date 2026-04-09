@@ -303,7 +303,7 @@ export default function Home() {
 
             {/* CTA Panel */}
             <BlurIn>
-              <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 text-center sticky top-24">
+              <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/10 text-center sticky top-44">
                 <div className="w-12 h-12 rounded-xl bg-black border border-white/15 flex items-center justify-center mx-auto mb-4">
                   <Flame className="w-6 h-6 text-white" />
                 </div>
