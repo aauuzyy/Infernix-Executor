@@ -113,7 +113,7 @@ const changelog = [
 
 export default function Download() {
   const handleDownload = () => {
-    window.open('https://link-target.net/2362148/t1FxoExXLLZX', '_blank');
+    window.open('https://link-target.net/2362148/5lENK2TunG9L', '_blank');
   };
 
   return (
