@@ -34,16 +34,16 @@ export default function Navbar() {
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled ? 'bg-black/95 backdrop-blur-sm border-b border-orange-500/10' : 'bg-transparent'
+          isScrolled ? 'bg-black/95 backdrop-blur-sm border-b border-white/5' : 'bg-transparent'
         }`}
       >
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-black border border-white/15 flex items-center justify-center">
               <Flame className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-bold gradient-text">Infernix</span>
+            <span className="text-lg font-bold text-white">Infernix</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -54,7 +54,7 @@ export default function Navbar() {
                 to={link.path}
                 className={`text-sm font-medium transition-colors ${
                   location.pathname === link.path
-                    ? 'text-orange-400'
+                    ? 'text-white'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
@@ -102,7 +102,7 @@ export default function Navbar() {
                   to={link.path}
                   className={`text-xl font-medium ${
                     location.pathname === link.path
-                      ? 'text-orange-400'
+                      ? 'text-white'
                       : 'text-gray-400'
                   }`}
                 >

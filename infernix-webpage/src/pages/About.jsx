@@ -46,8 +46,6 @@ const features = [
 export default function About() {
   return (
     <div className="relative bg-black min-h-screen pt-24 pb-20">
-      {/* Fire background */}
-      <div className="fire-bg" />
 
       <div className="relative z-10 max-w-4xl mx-auto px-6">
         {/* Header */}
@@ -56,7 +54,7 @@ export default function About() {
             initial={{ scale: 0, filter: 'blur(20px)' }}
             animate={{ scale: 1, filter: 'blur(0px)' }}
             transition={{ duration: 0.7, type: 'spring', stiffness: 80 }}
-            className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-6 glow-fire"
+            className="w-20 h-20 rounded-full bg-black border border-white/15 flex items-center justify-center mx-auto mb-6"
           >
             <Flame className="w-10 h-10 text-white" />
           </motion.div>
@@ -83,8 +81,8 @@ export default function About() {
         <StaggerContainer className="grid md:grid-cols-3 gap-4 mb-16">
           {values.map((value) => (
             <StaggerItem key={value.title}>
-              <div className="p-6 rounded-2xl bg-white/[0.03] border border-orange-500/10 card-hover text-center h-full">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-4">
+              <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/5 card-hover text-center h-full">
+                <div className="w-12 h-12 rounded-xl bg-white/[0.08] flex items-center justify-center mx-auto mb-4">
                   <value.icon className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-white font-bold mb-2">{value.title}</h3>
@@ -99,7 +97,7 @@ export default function About() {
 
         {/* Story */}
         <BlurIn>
-          <div className="p-8 rounded-2xl bg-white/[0.03] border border-orange-500/10 mb-16">
+          <div className="p-8 rounded-2xl bg-white/[0.03] border border-white/5 mb-16">
             <h2 className="text-2xl font-black text-white mb-6 text-center tracking-tight">Our Story</h2>
             <div className="space-y-4 text-gray-400 leading-relaxed">
               <p>
@@ -112,8 +110,8 @@ export default function About() {
               </p>
               <p>
                 Our executor combines{' '}
-                <span className="text-orange-400">cutting-edge technology</span> with a{' '}
-                <span className="text-orange-400">user-first design</span>.
+                <span className="text-white font-semibold">cutting-edge technology</span> with a{' '}
+                <span className="text-white font-semibold">user-first design</span>.
               </p>
             </div>
           </div>
@@ -131,9 +129,9 @@ export default function About() {
               whileInView={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="p-5 rounded-2xl bg-white/[0.03] border border-orange-500/10 card-hover flex gap-4"
+              className="p-5 rounded-2xl bg-white/[0.03] border border-white/5 card-hover flex gap-4"
             >
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center flex-shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-white/[0.08] flex items-center justify-center flex-shrink-0">
                 <feature.icon className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -149,8 +147,8 @@ export default function About() {
 
         {/* Discord CTA */}
         <BlurIn>
-          <div className="p-10 rounded-3xl bg-gradient-to-br from-orange-500/8 to-red-600/8 border border-orange-500/20 text-center">
-            <Flame className="w-12 h-12 text-orange-500 mx-auto mb-4" />
+          <div className="p-10 rounded-3xl bg-white/[0.03] border border-white/5 text-center">
+            <Flame className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h2 className="text-2xl font-black text-white mb-3 tracking-tight">Join Our Community</h2>
             <p className="text-gray-400 mb-8">Connect with users, get support, and share scripts.</p>
             <a

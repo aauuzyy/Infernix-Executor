@@ -13,7 +13,6 @@ import {
   History,
   Activity,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
 import { StaggerContainer, StaggerItem, BlurIn } from '../components/Animations';
 
 const changelog = [
@@ -21,51 +20,51 @@ const changelog = [
     version: '1.3.1',
     date: 'April 8, 2026',
     changes: [
-      '🔥 Xeno DLL updated for latest Roblox version',
-      '⚡ Removed Military AI tab for a cleaner interface',
-      '🛠️ Version reporting fixed for accurate update webhooks',
-      '✨ UI refinements and stability improvements',
+      'Xeno DLL updated for latest Roblox version',
+      'Removed Military AI tab for a cleaner interface',
+      'Version reporting fixed for accurate update webhooks',
+      'UI refinements and stability improvements',
     ]
   },
   {
     version: '1.3.0',
     date: 'February 25, 2026',
     changes: [
-      '🔗 Discord & Website quick links added to Dashboard',
-      '🎨 Theme-aware colors — entire UI follows your accent color',
-      '🤖 AI Assistant reliability fix',
-      '🔔 Notification system polish — always visible above all UI',
-      '✨ UI consistency and glow effect improvements',
+      'Discord & Website quick links added to Dashboard',
+      'Theme-aware colors — entire UI follows your accent color',
+      'AI Assistant reliability fix',
+      'Notification system polish — always visible above all UI',
+      'UI consistency and glow effect improvements',
     ]
   },
   {
     version: '1.2.9',
     date: 'February 23, 2026',
     changes: [
-      '🔩 Hook Function templates in toolbar (hookfunction, hookmetamethod)',
-      '⚡ AutoExec quick-access button in executor toolbar',
-      '🔧 Fixed Auto Attach — smarter retry, no longer breaks game UI',
-      '📜 Fixed Auto Execute — added retry on failure, 5s stability delay',
-      '📊 Fixed Dashboard execution counter — updates live after each run',
+      'Hook Function templates in toolbar (hookfunction, hookmetamethod)',
+      'AutoExec quick-access button in executor toolbar',
+      'Fixed Auto Attach — smarter retry, no longer breaks game UI',
+      'Fixed Auto Execute — added retry on failure, 5s stability delay',
+      'Fixed Dashboard execution counter — updates live after each run',
     ]
   },
   {
     version: '1.2.8',
     date: 'February 22, 2026',
     changes: [
-      '🖼️ Custom Background — set any image as your app background',
-      '🔲 Live blur slider for background intensity',
-      '🪟 Monaco editor transparency with custom backgrounds',
+      'Custom Background — set any image as your app background',
+      'Live blur slider for background intensity',
+      'Monaco editor transparency with custom backgrounds',
     ]
   },
   {
     version: '1.2.5',
     date: 'February 2026',
     changes: [
-      '🦠 VirusTotal Integration — scan scripts for threats',
-      '🔍 Auto-Scan on drag & drop',
-      '🛡️ Tab Safety Badges — scan status per tab',
-      '🤖 AI Security Summary — AI analysis of scan results',
+      'VirusTotal Integration — scan scripts for threats',
+      'Auto-Scan on drag & drop',
+      'Tab Safety Badges — scan status per tab',
+      'AI Security Summary — AI analysis of scan results',
     ]
   },
 ];
@@ -118,50 +117,9 @@ const features = [
   },
 ];
 
-// Ember particle component
-function Embers() {
-  const [embers, setEmbers] = useState([]);
-  
-  useEffect(() => {
-    const emberCount = 28;
-    const newEmbers = [];
-    for (let i = 0; i < emberCount; i++) {
-      newEmbers.push({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 5,
-        duration: 4 + Math.random() * 4,
-        size: 2 + Math.random() * 3,
-      });
-    }
-    setEmbers(newEmbers);
-  }, []);
-  
-  return (
-    <>
-      {embers.map((ember) => (
-        <div
-          key={ember.id}
-          className="ember"
-          style={{
-            left: `${ember.left}%`,
-            width: `${ember.size}px`,
-            height: `${ember.size}px`,
-            animationDelay: `${ember.delay}s`,
-            animationDuration: `${ember.duration}s`,
-          }}
-        />
-      ))}
-    </>
-  );
-}
-
 export default function Home() {
   return (
     <div className="relative bg-black min-h-screen">
-      {/* Fire background */}
-      <div className="fire-bg" />
-      <Embers />
 
       {/* ── Hero ───────────────────────────────────────────── */}
       <section className="relative min-h-screen flex items-center justify-center pt-16">
@@ -170,7 +128,7 @@ export default function Home() {
             initial={{ scale: 0, rotate: -180, filter: 'blur(20px)' }}
             animate={{ scale: 1, rotate: 0, filter: 'blur(0px)' }}
             transition={{ duration: 0.9, type: 'spring', stiffness: 70 }}
-            className="w-28 h-28 mx-auto mb-10 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center glow-fire"
+            className="w-28 h-28 mx-auto mb-10 rounded-full bg-black border border-white/15 flex items-center justify-center"
           >
             <Flame className="w-16 h-16 text-white" />
           </motion.div>
@@ -179,7 +137,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="text-6xl md:text-8xl font-black mb-6 tracking-tight"
+            className="text-6xl md:text-8xl font-black mb-6 tracking-tight text-white"
           >
             <span className="shimmer-text">Infernix</span>
           </motion.h1>
@@ -191,19 +149,19 @@ export default function Home() {
             className="text-lg md:text-xl text-gray-400 max-w-xl mx-auto mb-8 leading-relaxed"
           >
             The next-generation Roblox executor.{' '}
-            <span className="text-orange-400">Powerful</span>,{' '}
-            <span className="text-orange-400">secure</span>, and{' '}
-            <span className="text-orange-400">incredibly fast</span>.
+            <span className="text-white font-semibold">Powerful</span>,{' '}
+            <span className="text-white font-semibold">secure</span>, and{' '}
+            <span className="text-white font-semibold">incredibly fast</span>.
           </motion.p>
 
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5, delay: 0.52 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500/10 border border-orange-500/25 mb-10"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/15 mb-10"
           >
-            <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-            <span className="text-sm text-orange-300 font-semibold tracking-wide">v1.3.1 — Now Available</span>
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <span className="text-sm text-gray-300 font-semibold tracking-wide">v1.3.1 — Now Available</span>
           </motion.div>
 
           <motion.div
@@ -252,8 +210,8 @@ export default function Home() {
           <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {features.map((feature) => (
               <StaggerItem key={feature.title}>
-                <div className="p-6 rounded-2xl bg-white/[0.03] border border-orange-500/10 card-hover h-full">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mb-4">
+                <div className="p-6 rounded-2xl bg-white/[0.03] border border-white/5 card-hover h-full">
+                  <div className="w-10 h-10 rounded-xl bg-white/[0.08] flex items-center justify-center mb-4">
                     <feature.icon className="w-5 h-5 text-white" />
                   </div>
                   <h3 className="text-white font-bold mb-1 text-sm">{feature.title}</h3>
@@ -275,7 +233,6 @@ export default function Home() {
         <div className="max-w-3xl mx-auto px-6">
           <BlurIn className="text-center mb-14">
             <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">
-              <History className="inline-block w-9 h-9 mr-3 text-orange-500 mb-1" />
               Latest <span className="gradient-text">Updates</span>
             </h2>
             <p className="text-gray-500">See what's new in Infernix</p>
@@ -289,14 +246,14 @@ export default function Home() {
                 whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                 viewport={{ once: true, margin: '-60px' }}
                 transition={{ delay: index * 0.08, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                className="p-6 rounded-2xl bg-white/[0.03] border border-orange-500/15 card-hover"
+                className="p-6 rounded-2xl bg-white/[0.03] border border-white/5 card-hover"
               >
                 <div className="flex items-center gap-3 mb-4 flex-wrap">
-                  <span className="px-3 py-1 rounded-full bg-gradient-to-r from-orange-500 to-red-600 text-white text-xs font-black tracking-wide">
+                  <span className="px-3 py-1 rounded-full bg-white text-black text-xs font-black tracking-wide">
                     v{release.version}
                   </span>
                   {index === 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-semibold">
+                    <span className="px-2 py-0.5 rounded-full bg-white/10 border border-white/20 text-gray-300 text-xs font-semibold">
                       Latest
                     </span>
                   )}
@@ -305,7 +262,7 @@ export default function Home() {
                 <ul className="space-y-2">
                   {release.changes.map((change, i) => (
                     <li key={i} className="text-gray-400 text-sm flex items-start gap-2">
-                      <span className="text-orange-600 mt-0.5 flex-shrink-0">›</span>
+                      <span className="text-gray-500 mt-0.5 flex-shrink-0">›</span>
                       {change}
                     </li>
                   ))}
@@ -325,11 +282,11 @@ export default function Home() {
       <section className="relative py-28 z-10">
         <div className="max-w-3xl mx-auto px-6 text-center">
           <BlurIn>
-            <div className="p-14 rounded-3xl bg-gradient-to-br from-orange-500/8 to-red-600/8 border border-orange-500/20">
+            <div className="p-14 rounded-3xl bg-white/[0.03] border border-white/10">
               <motion.div
-                animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-                className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-8 glow-fire"
+                className="w-16 h-16 rounded-2xl bg-black border border-white/15 flex items-center justify-center mx-auto mb-8"
               >
                 <Flame className="w-9 h-9 text-white" />
               </motion.div>

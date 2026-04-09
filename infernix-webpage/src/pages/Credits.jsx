@@ -65,8 +65,6 @@ const technologies = [
 export default function Credits() {
   return (
     <div className="relative bg-black min-h-screen pt-24 pb-20">
-      {/* Fire background */}
-      <div className="fire-bg" />
 
       <div className="relative z-10 max-w-5xl mx-auto px-6">
         {/* Header */}
@@ -75,7 +73,7 @@ export default function Credits() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
         >
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 rounded-full bg-black border border-white/15 flex items-center justify-center mx-auto mb-6">
             <Heart className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
@@ -99,13 +97,13 @@ export default function Credits() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="p-5 rounded-xl bg-white/5 border border-orange-500/10 text-center"
+                className="p-5 rounded-xl bg-white/5 border border-white/5 text-center"
               >
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-3">
+                <div className="w-12 h-12 rounded-full bg-white/[0.08] flex items-center justify-center mx-auto mb-3">
                   <member.icon className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="font-semibold text-white text-sm mb-1">{member.name}</h3>
-                <p className="text-xs text-orange-400 mb-2">{member.role}</p>
+                <p className="text-xs text-gray-400 mb-2">{member.role}</p>
                 <p className="text-xs text-gray-500">{member.description}</p>
               </motion.div>
             ))}
@@ -119,38 +117,33 @@ export default function Credits() {
           transition={{ delay: 0.3 }}
           className="mb-12"
         >
-          <div className="p-6 rounded-2xl bg-white/5 border border-orange-500/10">
+          <div className="p-6 rounded-2xl bg-white/5 border border-white/5">
             <div className="flex items-center justify-center gap-3 mb-6">
-              <Flame className="w-5 h-5 text-orange-400" />
               <h2 className="text-xl font-bold text-white">Special Thanks</h2>
-              <Flame className="w-5 h-5 text-orange-400" />
             </div>
 
             {/* CRYSTXLL - The Legend */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className="mb-6 p-6 rounded-2xl bg-gradient-to-br from-orange-600/30 via-yellow-500/20 to-red-600/30 border-2 border-orange-500 ring-2 ring-orange-500/50 shadow-[0_0_40px_rgba(249,115,22,0.4)] relative overflow-hidden"
+              transition={{ delay: 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="mb-6 p-6 rounded-2xl bg-white/[0.05] border border-white/20 relative overflow-hidden"
             >
-              {/* Animated glow effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-orange-500/10 to-transparent animate-pulse" />
-              
               <div className="relative flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-orange-500 via-yellow-400 to-red-500 flex items-center justify-center flex-shrink-0 shadow-[0_0_20px_rgba(249,115,22,0.6)] animate-pulse">
+                <div className="w-16 h-16 rounded-full bg-black border border-white/15 flex items-center justify-center flex-shrink-0">
                   <Flame className="w-8 h-8 text-white" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-2xl font-bold bg-gradient-to-r from-orange-400 via-yellow-300 to-orange-500 bg-clip-text text-transparent">
+                    <h3 className="text-2xl font-bold text-white">
                       Crystxll
                     </h3>
-                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-orange-500 to-yellow-500 text-black rounded-full">
+                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white border border-white/20 rounded-full">
                       The Inspiration
                     </span>
                   </div>
-                  <p className="text-orange-100/90 text-sm leading-relaxed">
-                    The one who convinced us to make Infernix! Without his inspiration and belief in this project, none of this would exist. A true legend. 🔥
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    The one who convinced us to make Infernix! Without his inspiration and belief in this project, none of this would exist. A true legend.
                   </p>
                 </div>
               </div>
@@ -163,7 +156,7 @@ export default function Credits() {
                   className="p-4 rounded-xl border bg-black/30 border-white/5"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-yellow-500 flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-white/[0.08] flex items-center justify-center flex-shrink-0">
                       <Heart className="w-4 h-4 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -173,7 +166,7 @@ export default function Credits() {
                             href={thanks.link} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="hover:text-orange-400 transition-colors inline-flex items-center gap-1"
+                            className="hover:text-white transition-colors inline-flex items-center gap-1"
                           >
                             {thanks.name}
                             <Globe className="w-3 h-3" />
@@ -204,7 +197,7 @@ export default function Credits() {
             {technologies.map((tech) => (
               <div
                 key={tech.name}
-                className="px-4 py-2 rounded-lg bg-white/5 border border-orange-500/10 text-sm"
+                className="px-4 py-2 rounded-lg bg-white/5 border border-white/5 text-sm"
               >
                 <span className="text-white font-medium">{tech.name}</span>
                 <span className="text-gray-500 ml-1">• {tech.description}</span>
@@ -218,7 +211,7 @@ export default function Credits() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="p-6 rounded-2xl bg-white/5 border border-orange-500/10 text-center"
+          className="p-6 rounded-2xl bg-white/5 border border-white/5 text-center"
         >
           <Github className="w-10 h-10 text-gray-500 mx-auto mb-3" />
           <h2 className="text-lg font-bold text-white mb-2">Open Source</h2>
