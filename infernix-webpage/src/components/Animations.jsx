@@ -3,7 +3,7 @@ import { useRef } from 'react';
 
 export function FadeIn({ children, delay = 0, direction = 'up', className = '' }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const isInView = useInView(ref, { once: true, margin: '0px 0px 220px 0px' });
 
   const directions = {
     up: { y: 40 },
@@ -27,7 +27,7 @@ export function FadeIn({ children, delay = 0, direction = 'up', className = '' }
 
 export function ScaleIn({ children, delay = 0, className = '' }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const isInView = useInView(ref, { once: true, margin: '0px 0px 220px 0px' });
 
   return (
     <motion.div
@@ -44,7 +44,7 @@ export function ScaleIn({ children, delay = 0, className = '' }) {
 
 export function SlideIn({ children, delay = 0, direction = 'left', className = '' }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const isInView = useInView(ref, { once: true, margin: '0px 0px 220px 0px' });
 
   const xValue = direction === 'left' ? -100 : 100;
 
@@ -63,7 +63,7 @@ export function SlideIn({ children, delay = 0, direction = 'left', className = '
 
 export function StaggerContainer({ children, className = '', staggerDelay = 0.1 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-100px' });
+  const isInView = useInView(ref, { once: true, margin: '0px 0px 220px 0px' });
 
   return (
     <motion.div
@@ -89,8 +89,8 @@ export function StaggerItem({ children, className = '' }) {
   return (
     <motion.div
       variants={{
-        hidden: { opacity: 0, y: 30 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+        hidden: { opacity: 0, y: 20, filter: 'blur(8px)' },
+        visible: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
       }}
       className={className}
     >
@@ -154,7 +154,7 @@ export function FloatingElement({ children, className = '', delay = 0 }) {
 
 export function BlurIn({ children, delay = 0, className = '' }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
+  const isInView = useInView(ref, { once: true, margin: '0px 0px 220px 0px' });
 
   return (
     <motion.div
@@ -171,7 +171,7 @@ export function BlurIn({ children, delay = 0, className = '' }) {
 
 export function TextReveal({ text, className = '', delay = 0 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: true, margin: '-60px' });
+  const isInView = useInView(ref, { once: true, margin: '0px 0px 220px 0px' });
   const words = text.split(' ');
 
   return (

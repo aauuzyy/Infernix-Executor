@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Heart, Github, Globe, Code2, Palette, Cpu, Users, Flame } from 'lucide-react';
+import { Heart, Github, Globe, Code2, Palette, Cpu, Users } from 'lucide-react';
 
 const team = [
   {
@@ -122,35 +122,8 @@ export default function Credits() {
               <h2 className="text-xl font-bold text-white">Special Thanks</h2>
             </div>
 
-            {/* CRYSTXLL - The Legend */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="mb-6 p-6 rounded-2xl bg-white/[0.05] border border-white/20 relative overflow-hidden"
-            >
-              <div className="relative flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-black border border-white/15 flex items-center justify-center flex-shrink-0">
-                  <Flame className="w-8 h-8 text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-2xl font-bold text-white">
-                      Crystxll
-                    </h3>
-                    <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-white/10 text-white border border-white/20 rounded-full">
-                      The Inspiration
-                    </span>
-                  </div>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    The one who convinced us to make Infernix! Without his inspiration and belief in this project, none of this would exist. A true legend.
-                  </p>
-                </div>
-              </div>
-            </motion.div>
-
-            <div className="grid md:grid-cols-2 gap-3">
-              {specialThanks.filter(t => !t.highlight).map((thanks) => (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {specialThanks.map((thanks) => (
                 <div
                   key={thanks.name}
                   className="p-4 rounded-xl border bg-black/30 border-white/5"
@@ -162,9 +135,9 @@ export default function Credits() {
                     <div className="min-w-0 flex-1">
                       <h3 className="font-semibold text-white text-sm mb-1">
                         {thanks.link ? (
-                          <a 
-                            href={thanks.link} 
-                            target="_blank" 
+                          <a
+                            href={thanks.link}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="hover:text-white transition-colors inline-flex items-center gap-1"
                           >

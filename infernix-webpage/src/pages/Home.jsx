@@ -258,7 +258,7 @@ export default function Home() {
                     key={release.version}
                     initial={{ opacity: 0, x: -20, filter: 'blur(6px)' }}
                     whileInView={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                    viewport={{ once: true, margin: '-40px' }}
+                    viewport={{ once: true, margin: '0px 0px 200px 0px' }}
                     transition={{ delay: index * 0.07, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     className="p-4 rounded-xl bg-white/[0.03] border border-white/5 card-hover"
                   >

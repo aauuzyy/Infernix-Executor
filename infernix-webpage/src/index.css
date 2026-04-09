@@ -84,8 +84,37 @@ body {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
+/* ── Grid background ────────────────────────────────── */
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 50%, black 20%, transparent 80%);
+}
 
+/* ── Animated gradient aura ─────────────────────────── */
+@keyframes aura-drift {
+  0%, 100% { transform: translate(0%, 0%) scale(1); opacity: 1; }
+  33%       { transform: translate(4%, -3%) scale(1.04); opacity: 0.75; }
+  66%       { transform: translate(-3%, 4%) scale(0.97); opacity: 0.9; }
+}
 
+.gradient-aura {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 45% at 25% 35%, rgba(255, 255, 255, 0.03) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 55% at 75% 65%, rgba(255, 255, 255, 0.02) 0%, transparent 70%);
+  animation: aura-drift 18s ease-in-out infinite;
+}
 
 
 /* Floating animation */
