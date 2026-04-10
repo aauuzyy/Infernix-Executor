@@ -63,41 +63,52 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const messages = req.body?.messages;
-  if (!Array.isArray(messages)) return res.status(400).json({ error: 'Missing messages' });
+  try {
+    let messages;
+    if (req.body && typeof req.body === 'object') {
+      messages = req.body.messages;
+    } else if (typeof req.body === 'string') {
+      messages = JSON.parse(req.body).messages;
+    }
+    if (!Array.isArray(messages)) return res.status(400).json({ error: 'Missing messages' });
 
-  const apiKey = (process.env.GROQ_API_KEY || '').trim();
-  if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not set' });
+    const apiKey = (process.env.GROQ_API_KEY || '').trim();
+    if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not set' });
 
-  const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'deepseek-r1-distill-llama-70b',
-      messages: [{ role: 'system', content: SYSTEM }, ...messages],
-      stream: true,
-      temperature: 0.6,
-      max_tokens: 1024,
-    }),
-  });
+    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'deepseek-r1-distill-llama-70b',
+        messages: [{ role: 'system', content: SYSTEM }, ...messages],
+        stream: true,
+        temperature: 0.6,
+        max_tokens: 1024,
+      }),
+    });
 
-  if (!groqRes.ok) {
-    const errText = await groqRes.text();
-    return res.status(500).json({ error: errText });
+    if (!groqRes.ok) {
+      const errText = await groqRes.text();
+      return res.status(502).json({ error: errText });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    const { Readable } = await import('stream');
+    const nodeStream = Readable.fromWeb(groqRes.body);
+    nodeStream.pipe(res);
+    await new Promise((resolve, reject) => {
+      nodeStream.on('end', resolve);
+      nodeStream.on('error', reject);
+    });
+  } catch (err) {
+    console.error('[chat api error]', err);
+    if (!res.headersSent) res.status(500).json({ error: err.message });
   }
-
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-
-  const reader = groqRes.body.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    res.write(value);
-  }
-  res.end();
 }
