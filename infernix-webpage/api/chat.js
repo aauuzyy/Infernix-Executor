@@ -82,7 +82,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'deepseek-r1-distill-llama-70b',
+        model: 'qwen/qwen3-32b',
         messages: [{ role: 'system', content: SYSTEM }, ...messages],
         stream: false,
         temperature: 0.6,
