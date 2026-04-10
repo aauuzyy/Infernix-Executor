@@ -257,6 +257,7 @@ export default function ChatSidebar() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [ctxMenu, setCtxMenu] = useState(null);
+  const [clearing, setClearing] = useState(false);
 
   const bottomRef = useRef(null);
   const textRef = useRef(null);
@@ -265,6 +266,14 @@ export default function ChatSidebar() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.filter(m => !m.streaming)));
   }, [messages]);
+
+  const clearChat = useCallback(() => {
+    setMessages([]);
+    setBusy(false);
+    localStorage.removeItem(STORAGE_KEY);
+    setClearing(true);
+    setTimeout(() => setClearing(false), 750);
+  }, []);
 
   // Auto-scroll
   useEffect(() => {
@@ -405,11 +414,11 @@ export default function ChatSidebar() {
             <div className="text-[10px] text-white/30 mt-0.5">Ask me anything • Free forever</div>
           </div>
           <button
-            onClick={() => { setMessages([]); localStorage.removeItem(STORAGE_KEY); }}
+            onClick={clearChat}
             title="Clear chat"
             className="w-7 h-7 rounded-lg hover:bg-white/10 flex items-center justify-center text-white/25 hover:text-white/60 transition-colors"
           >
-            <RotateCcw size={13} />
+            <RotateCcw size={13} className={clearing ? 'animate-spin' : 'transition-transform'} />
           </button>
         </div>
 
