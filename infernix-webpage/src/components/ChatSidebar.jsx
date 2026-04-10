@@ -431,8 +431,8 @@ export default function ChatSidebar() {
               transition={{ delay: 0.15 }}
               className="text-center mt-6"
             >
-              <div className="w-12 h-12 rounded-full bg-black border border-white/12 flex items-center justify-center mx-auto mb-4">
-                <Flame className="w-5 h-5 text-white/40" strokeWidth={1} />
+              <div className="w-12 h-12 rounded-full bg-black border-[0.5px] border-white/12 flex items-center justify-center mx-auto mb-4">
+                <Flame className="w-5 h-5 text-white/40" />
               </div>
               <p className="text-white/25 text-xs leading-relaxed mb-5">
                 Hi! I'm Infernix AI.<br />Ask me anything or pick a suggestion.
