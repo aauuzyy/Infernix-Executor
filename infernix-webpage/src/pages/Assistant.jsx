@@ -266,9 +266,9 @@ export default function Assistant() {
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 bg-gradient-to-t from-black via-black/95 to-transparent pt-8 pb-6 px-6">
+      <div className="sticky bottom-0 bg-gradient-to-t from-black via-black/90 to-transparent pt-4 pb-4 px-6">
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-end gap-3 bg-white/[0.04] border border-white/[0.09] rounded-2xl px-4 py-3 focus-within:border-white/20 transition-colors">
+          <div className="flex items-end gap-3 bg-white/[0.04] border border-white/[0.09] rounded-xl px-3 py-2 focus-within:border-white/20 transition-colors">
             <textarea
               ref={textRef}
               value={input}
