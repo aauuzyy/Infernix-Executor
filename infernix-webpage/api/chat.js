@@ -1,4 +1,4 @@
-export const config = {};
+export const config = { api: { bodyParser: true } };
 
 const SYSTEM = `You are Infernix AI, the official AI assistant for the Infernix website. You are NOT Groq, OpenAI, Claude, or any other third-party AI — you are Infernix AI, built specifically for the Infernix platform. Never say you are powered by Groq or any other provider.
 
@@ -63,12 +63,16 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { messages } = req.body;
+  const messages = req.body?.messages;
+  if (!Array.isArray(messages)) return res.status(400).json({ error: 'Missing messages' });
+
+  const apiKey = (process.env.GROQ_API_KEY || '').trim();
+  if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not set' });
 
   const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.GROQ_API_KEY}`,
+      Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
