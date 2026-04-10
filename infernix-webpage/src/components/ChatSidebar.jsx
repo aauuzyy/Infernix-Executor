@@ -241,7 +241,6 @@ export default function ChatSidebar() {
 
   const bottomRef = useRef(null);
   const textRef = useRef(null);
-  const abortRef = useRef(null);
 
   // Persist (only finalized messages)
   useEffect(() => {
@@ -294,92 +293,55 @@ export default function ChatSidebar() {
       .map(m => ({ role: m.role, content: m.content }));
 
     try {
-      abortRef.current = new AbortController();
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: history }),
-        signal: abortRef.current.signal,
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const reader = res.body.getReader();
-      const dec = new TextDecoder();
-      let full = '';
+      const data = await res.json();
+      const raw = data.content ?? '';
+
+      // Parse <think>...</think> out of the full response
+      const thinkStart = Date.now();
       let think = '';
-      let inThink = false;
-      let thinkStart = 0;
-      let thinkTime = 0;
-
-      outer: while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const raw = dec.decode(value);
-        for (const line of raw.split('\n')) {
-          if (!line.startsWith('data: ')) continue;
-          const payload = line.slice(6).trim();
-          if (payload === '[DONE]') break outer;
-          let parsed;
-          try { parsed = JSON.parse(payload); } catch { continue; }
-
-          const delta = parsed.choices?.[0]?.delta?.content ?? '';
-          if (!delta) continue;
-
-          // Parse <think> tags inline
-          let rem = delta;
-          while (rem.length) {
-            if (inThink) {
-              const ei = rem.indexOf('</think>');
-              if (ei !== -1) {
-                think += rem.slice(0, ei);
-                rem = rem.slice(ei + 8);
-                inThink = false;
-                thinkTime = Math.max(1, Math.round((Date.now() - thinkStart) / 1000));
-              } else {
-                think += rem;
-                rem = '';
-              }
-            } else {
-              const si = rem.indexOf('<think>');
-              if (si !== -1) {
-                full += rem.slice(0, si);
-                rem = rem.slice(si + 7);
-                inThink = true;
-                thinkStart = Date.now();
-              } else {
-                full += rem;
-                rem = '';
-              }
-            }
-          }
-
-          setMessages(prev => prev.map(m =>
-            m.id === aiId
-              ? { ...m, content: full, thinking: think, thinkTime, inThink, streaming: true }
-              : m
-          ));
-        }
+      let full = raw;
+      const thinkMatch = raw.match(/^<think>([\s\S]*?)<\/think>\s*/);
+      if (thinkMatch) {
+        think = thinkMatch[1].trim();
+        full = raw.slice(thinkMatch[0].length);
       }
+      const thinkTime = think ? Math.max(1, Math.round(think.length / 400)) : 0;
 
       const { path, text: cleaned } = stripNav(full);
+
+      // Typewriter reveal
+      let revealed = '';
+      for (let i = 0; i < cleaned.length; i++) {
+        revealed += cleaned[i];
+        const snap = revealed;
+        setMessages(prev => prev.map(m =>
+          m.id === aiId ? { ...m, content: snap, thinking: think, thinkTime, streaming: true } : m
+        ));
+        await new Promise(r => setTimeout(r, 8));
+      }
+
       setMessages(prev => prev.map(m =>
         m.id === aiId
-          ? { ...m, content: cleaned, thinking: think, thinkTime, inThink: false, streaming: false }
+          ? { ...m, content: cleaned, thinking: think, thinkTime, streaming: false }
           : m
       ));
 
       if (path) setTimeout(() => navigate(path), 700);
 
     } catch (err) {
-      if (err.name !== 'AbortError') {
-        setMessages(prev => prev.map(m =>
-          m.id === aiId
-            ? { ...m, content: 'Sorry, something went wrong. Please try again.', streaming: false }
-            : m
-        ));
-      }
+      setMessages(prev => prev.map(m =>
+        m.id === aiId
+          ? { ...m, content: 'Sorry, something went wrong. Please try again.', streaming: false }
+          : m
+      ));
     }
 
     setBusy(false);

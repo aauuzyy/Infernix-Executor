@@ -84,7 +84,7 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: 'deepseek-r1-distill-llama-70b',
         messages: [{ role: 'system', content: SYSTEM }, ...messages],
-        stream: true,
+        stream: false,
         temperature: 0.6,
         max_tokens: 1024,
       }),
@@ -95,20 +95,11 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: errText });
     }
 
-    res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-    res.setHeader('Cache-Control', 'no-cache, no-transform');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Accel-Buffering', 'no');
-
-    const { Readable } = await import('stream');
-    const nodeStream = Readable.fromWeb(groqRes.body);
-    nodeStream.pipe(res);
-    await new Promise((resolve, reject) => {
-      nodeStream.on('end', resolve);
-      nodeStream.on('error', reject);
-    });
+    const data = await groqRes.json();
+    const content = data.choices?.[0]?.message?.content ?? '';
+    return res.status(200).json({ content });
   } catch (err) {
     console.error('[chat api error]', err);
-    if (!res.headersSent) res.status(500).json({ error: err.message });
+    if (!res.headersSent) return res.status(500).json({ error: err.message });
   }
 }
