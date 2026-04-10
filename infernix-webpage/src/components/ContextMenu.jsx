@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, ArrowRight, RotateCcw, Link, FileText,
+  ArrowLeft, ArrowRight, RotateCcw, Link,
   Printer, Maximize, ArrowUp, Copy, BookOpen,
 } from 'lucide-react';
 
@@ -66,7 +67,7 @@ export default function ContextMenu() {
     if (x !== menu.x || y !== menu.y) setMenu({ x, y });
   }, [menu]);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {menu && (
         <motion.div
@@ -95,6 +96,7 @@ export default function ContextMenu() {
           )}
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
