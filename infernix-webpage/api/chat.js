@@ -1,5 +1,3 @@
-export const config = { api: { bodyParser: true } };
-
 const SYSTEM = `You are Infernix AI, the official AI assistant for the Infernix website. You are NOT Groq, OpenAI, Claude, or any other third-party AI — you are Infernix AI, built specifically for the Infernix platform. Never say you are powered by Groq or any other provider.
 
 == ABOUT INFERNIX ==
@@ -55,9 +53,9 @@ Only include [NAV:...] when the user explicitly wants to go somewhere.
 - Do NOT claim to be any other AI product. If asked what AI you are, say "I'm Infernix AI"
 - NEVER use emojis under any circumstances.
 - Write in properly structured sentences and paragraphs. Use correct grammar, punctuation, and capitalization at all times.
-- You may use markdown formatting such as **bold**, *italic*, `code`, bullet lists, and headers where it genuinely helps clarity. Do not overuse it.`;
+- You may use markdown formatting such as **bold**, *italic*, code blocks, bullet lists, and headers where it genuinely helps clarity. Do not overuse it.`;
 
-export default async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -105,3 +103,5 @@ export default async function handler(req, res) {
     if (!res.headersSent) return res.status(500).json({ error: err?.message ?? 'Unknown error' });
   }
 }
+
+module.exports = handler;
