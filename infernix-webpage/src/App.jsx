@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ContextMenu from './components/ContextMenu';
+import ChatSidebar from './components/ChatSidebar';
 import Home from './pages/Home';
 import Download from './pages/Download';
 import About from './pages/About';
@@ -95,9 +96,10 @@ function App() {
         <ScrollToTop />
         <CursorGlow />
         <ContextMenu />
+        <ChatSidebar />
         <div className="grid-bg" aria-hidden="true" />
         <Navbar />
-        <main className="flex-1 relative z-10">
+        <main className="flex-1 relative z-10 pr-80">
           <AnimatedRoutes />
         </main>
         <Footer className="relative z-10" />

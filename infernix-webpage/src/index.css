@@ -97,7 +97,50 @@ body {
   background-size: 40px 40px;
 }
 
-/* Shimmer layer removed */
+/* Shimmer layer — masked to only grid line pixels */
+.grid-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent   20%,
+    rgba(255,255,255,0.015) 40%,
+    rgba(255,255,255,0.05)  50%,
+    rgba(255,255,255,0.015) 60%,
+    transparent   80%
+  );
+  background-size: 250% 250%;
+  animation: grid-shimmer 7s linear infinite;
+  -webkit-mask-image:
+    linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
+  mask-image:
+    linear-gradient(rgba(255,255,255,1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px);
+  -webkit-mask-size: 40px 40px;
+  mask-size: 40px 40px;
+}
+
+@keyframes grid-shimmer {
+  0%   { background-position: -100% -100%; }
+  100% { background-position: 200%  200%;  }
+}
+
+/* ── Chat scrollbar ───────────────────────────────── */
+.chat-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.chat-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.chat-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+}
+.chat-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
 
 /* ── Context menu ─────────────────────────────────── */
 .ctx-menu {

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, ArrowRight, RotateCcw, Link,
-  Printer, Maximize, ArrowUp, Copy, BookOpen,
+  Printer, Maximize, ArrowUp, Copy,
 } from 'lucide-react';
 
 const ITEMS = [
@@ -18,7 +18,6 @@ const ITEMS = [
   { icon: Maximize,    label: 'Toggle Fullscreen',  action: () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {}); else document.exitFullscreen(); } },
   null,
   { icon: Printer,     label: 'Print Page',         action: () => window.print() },
-  { icon: BookOpen,    label: 'View Source',        action: () => window.open('view-source:' + window.location.href) },
 ];
 
 export default function ContextMenu() {
