@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 import {
   Send, Flame, ChevronDown, RotateCcw,
   Copy, Sparkles, HelpCircle, Edit3, Globe, Brain, User,
@@ -143,7 +144,25 @@ function MsgBubble({ msg, onCtx }) {
             : 'bg-white/[0.06] text-white/85 rounded-tl-sm border border-white/[0.07]'
         }`}
       >
-        {isEmpty ? <TypingDots /> : (msg.content || '')}
+        {isEmpty ? <TypingDots /> : isUser ? (msg.content || '') : (
+          <ReactMarkdown
+            components={{
+              p: ({node, ...props}) => <p className="mb-1.5 last:mb-0" {...props} />,
+              ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-1.5 space-y-0.5" {...props} />,
+              ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-1.5 space-y-0.5" {...props} />,
+              li: ({node, ...props}) => <li className="leading-relaxed" {...props} />,
+              strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
+              em: ({node, ...props}) => <em className="italic text-white/90" {...props} />,
+              code: ({node, inline, ...props}) => inline
+                ? <code className="bg-white/10 px-1 py-0.5 rounded text-xs font-mono text-white/90" {...props} />
+                : <code className="block bg-white/10 p-2 rounded-lg text-xs font-mono text-white/90 mt-1 mb-1.5 overflow-x-auto whitespace-pre" {...props} />,
+              h1: ({node, ...props}) => <h1 className="font-semibold text-white text-base mb-1" {...props} />,
+              h2: ({node, ...props}) => <h2 className="font-semibold text-white text-sm mb-1" {...props} />,
+              h3: ({node, ...props}) => <h3 className="font-medium text-white text-sm mb-1" {...props} />,
+              a: ({node, ...props}) => <a className="underline text-white/70 hover:text-white" target="_blank" rel="noopener noreferrer" {...props} />,
+            }}
+          >{msg.content || ''}</ReactMarkdown>
+        )}
       </div>
     </motion.div>
   );
