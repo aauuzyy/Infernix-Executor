@@ -153,9 +153,10 @@ function MsgBubble({ msg, onCtx }) {
               li: ({node, ...props}) => <li className="leading-relaxed" {...props} />,
               strong: ({node, ...props}) => <strong className="font-semibold text-white" {...props} />,
               em: ({node, ...props}) => <em className="italic text-white/90" {...props} />,
+              pre: ({node, ...props}) => <pre className="bg-white/[0.06] border border-white/[0.08] rounded-lg mt-1 mb-2 overflow-x-auto" {...props} />,
               code: ({node, inline, ...props}) => inline
                 ? <code className="bg-white/10 px-1 py-0.5 rounded text-xs font-mono text-white/90" {...props} />
-                : <code className="block bg-white/10 p-2 rounded-lg text-xs font-mono text-white/90 mt-1 mb-1.5 overflow-x-auto whitespace-pre" {...props} />,
+                : <code className="block p-3 text-xs font-mono text-white/85 whitespace-pre" {...props} />,
               h1: ({node, ...props}) => <h1 className="font-semibold text-white text-base mb-1" {...props} />,
               h2: ({node, ...props}) => <h2 className="font-semibold text-white text-sm mb-1" {...props} />,
               h3: ({node, ...props}) => <h3 className="font-medium text-white text-sm mb-1" {...props} />,
