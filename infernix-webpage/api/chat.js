@@ -101,7 +101,7 @@ export default async function handler(req, res) {
     const content = data.choices?.[0]?.message?.content ?? '';
     return res.status(200).json({ content });
   } catch (err) {
-    console.error('[chat api error]', err);
-    if (!res.headersSent) return res.status(500).json({ error: err.message });
+    console.error('[chat api error]', err?.message ?? err);
+    if (!res.headersSent) return res.status(500).json({ error: err?.message ?? 'Unknown error' });
   }
 }

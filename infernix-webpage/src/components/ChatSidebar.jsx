@@ -399,7 +399,7 @@ export default function ChatSidebar() {
   return (
     <>
       {/* ── Always-visible sidebar ───────────────────── */}
-      <aside className="fixed right-0 top-0 bottom-0 z-40 w-80 flex flex-col bg-[rgba(0,0,0,0.80)] backdrop-blur-2xl border-l border-white/[0.07]">
+      <aside className="fixed right-0 top-0 bottom-0 z-[60] w-80 flex flex-col bg-[rgba(0,0,0,0.80)] backdrop-blur-2xl border-l border-white/[0.07]">
 
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.07] shrink-0">
