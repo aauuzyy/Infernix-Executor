@@ -8,12 +8,14 @@ const navLinks = [
   { name: 'About', path: '/about' },
   { name: 'Download', path: '/download' },
   { name: 'Credits', path: '/credits' },
+  { name: 'Assistant', path: '/assistant' },
 ];
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const isAssistant = location.pathname === '/assistant';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,7 +35,7 @@ export default function Navbar() {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
-        className={`fixed top-0 left-0 right-80 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 ${isAssistant ? 'right-0' : 'right-80'} z-50 transition-all duration-300 ${
           isScrolled ? 'bg-black/95 backdrop-blur-sm border-b border-white/5' : 'bg-transparent'
         }`}
       >

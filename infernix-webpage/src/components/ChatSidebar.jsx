@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import {
@@ -250,6 +250,8 @@ const SUGGESTIONS = [
 // ── Main component ────────────────────────────────────────────
 export default function ChatSidebar() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isAssistant = pathname === '/assistant';
 
   const [open, setOpen] = useState(false);  // kept for compat, unused
   const [messages, setMessages] = useState(() => {
@@ -400,7 +402,15 @@ export default function ChatSidebar() {
   return (
     <>
       {/* ── Always-visible sidebar ───────────────────── */}
-      <aside className="fixed right-0 top-0 bottom-0 z-[60] w-80 flex flex-col bg-[rgba(0,0,0,0.80)] backdrop-blur-2xl border-l border-white/[0.07]">
+      <motion.aside
+        animate={{
+          x: isAssistant ? 320 : 0,
+          opacity: isAssistant ? 0 : 1,
+          filter: isAssistant ? 'blur(12px)' : 'blur(0px)',
+        }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+        className="fixed right-0 top-0 bottom-0 z-[60] w-80 flex flex-col bg-[rgba(0,0,0,0.80)] backdrop-blur-2xl border-l border-white/[0.07]"
+      >
 
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-white/[0.07] shrink-0">
@@ -490,7 +500,7 @@ export default function ChatSidebar() {
             Shift + Enter for new line
           </p>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Message context menu */}
       {ctxMenu && (

@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import Download from './pages/Download';
 import About from './pages/About';
 import Credits from './pages/Credits';
+import Assistant from './pages/Assistant';
 
 function CursorGlow() {
   const glowRef = useRef(null);
@@ -83,27 +84,36 @@ function AnimatedRoutes() {
           <Route path="/download" element={<Download />} />
           <Route path="/about" element={<About />} />
           <Route path="/credits" element={<Credits />} />
+          <Route path="/assistant" element={<Assistant />} />
         </Routes>
       </motion.div>
     </AnimatePresence>
   );
 }
 
+function AppInner() {
+  const { pathname } = useLocation();
+  const isAssistant = pathname === '/assistant';
+  return (
+    <div className="min-h-screen bg-black flex flex-col">
+      <ScrollToTop />
+      <CursorGlow />
+      <ContextMenu />
+      <ChatSidebar />
+      <div className="grid-bg" aria-hidden="true" />
+      <Navbar />
+      <main className={`flex-1 relative z-10 ${isAssistant ? '' : 'pr-80'}`}>
+        <AnimatedRoutes />
+      </main>
+      {!isAssistant && <Footer className="relative z-10" />}
+    </div>
+  );
+}
+
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-black flex flex-col">
-        <ScrollToTop />
-        <CursorGlow />
-        <ContextMenu />
-        <ChatSidebar />
-        <div className="grid-bg" aria-hidden="true" />
-        <Navbar />
-        <main className="flex-1 relative z-10 pr-80">
-          <AnimatedRoutes />
-        </main>
-        <Footer className="relative z-10" />
-      </div>
+      <AppInner />
     </Router>
   );
 }
