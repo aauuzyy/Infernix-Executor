@@ -86,7 +86,7 @@ async function webSearch(query) {
   if (tavilyKey) {
     try {
       const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 4000);
+      setTimeout(() => ctrl.abort(), 1500);
       const r = await fetch('https://api.tavily.com/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -103,7 +103,7 @@ async function webSearch(query) {
   // Fall back to DuckDuckGo instant answers — no key required
   try {
     const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 3000);
+    setTimeout(() => ctrl.abort(), 1500);
     const r = await fetch(
       `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=1&skip_disambig=1`,
       { signal: ctrl.signal }
@@ -174,7 +174,7 @@ async function handler(req, res) {
         const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages: groqMessages, stream: false, temperature: 0.6, max_tokens: 2048 }),
+          body: JSON.stringify({ model, messages: groqMessages, stream: false, temperature: 0.6, max_tokens: model.includes('deepseek') ? 1024 : 2048 }),
           signal: controller.signal,
         });
         clearTimeout(timer);
@@ -185,26 +185,28 @@ async function handler(req, res) {
       }
     }
 
-    // Try deepseek first (produces <think> content), rotate keys on 429/503/timeout
+    // Try deepseek with the first available key only — short 3s window.
+    // Vercel Hobby has a 10s hard limit; web search can use up to 3s, leaving ~6s for AI.
+    // Deepseek produces <think> content; llama is the reliable fast fallback.
     let groqRes;
     let usedFallback = false;
-    for (const key of apiKeys) {
-      try {
-        groqRes = await callGroq('deepseek-r1-distill-llama-70b', 8000, key);
-        if (groqRes.status !== 429 && groqRes.status !== 503) break; // this key worked
-        groqRes = null; // rate-limited, try next key
-      } catch {
-        groqRes = null; // timeout, try next key
+    try {
+      groqRes = await callGroq('deepseek-r1-distill-llama-70b', 3000, apiKeys[0]);
+      if (groqRes.status === 429 || groqRes.status === 503) {
+        groqRes = null;
+        usedFallback = true;
       }
+    } catch {
+      groqRes = null;
+      usedFallback = true;
     }
-    if (!groqRes) usedFallback = true;
 
-    if (usedFallback) {
-      // All keys rate-limited on deepseek — try llama fallback, rotating keys
+    if (usedFallback || !groqRes) {
+      // Rotate keys for llama fallback — it's fast (usually <2s) and has high token limits
       let lastErr;
       for (const key of apiKeys) {
         try {
-          groqRes = await callGroq('llama-3.3-70b-versatile', 25000, key);
+          groqRes = await callGroq('llama-3.3-70b-versatile', 5000, key);
           if (groqRes.ok || groqRes.status !== 429) break;
           groqRes = null;
         } catch (e) {
