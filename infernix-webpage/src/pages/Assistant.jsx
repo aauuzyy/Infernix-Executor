@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { Send, Flame, Brain, ChevronDown, ChevronRight, RotateCcw, User, Copy, Check, X, Code2 } from 'lucide-react';
+import { Send, Flame, Brain, ChevronDown, ChevronRight, RotateCcw, User, Copy, Check, X, Code2, CornerUpLeft } from 'lucide-react';
 
 const STORAGE_KEY = 'infernix-assistant-v1';
 const ARTIFACT_KEY = 'infernix-assistant-artifacts-v1';
@@ -305,10 +305,12 @@ export default function Assistant() {
   const [openArtifactId, setOpenArtifactId] = useState(null);
   const [streamingArtifact, setStreamingArtifact] = useState(null);
   const [patchedArtifactId, setPatchedArtifactId] = useState(null);
+  const [msgCtx, setMsgCtx] = useState(null); // { x, y, msgId }
   const bottomRef = useRef(null);
   const textRef = useRef(null);
   const afterClearRef = useRef(null);
   const doSendRef = useRef(null);
+  const msgCtxRef = useRef(null);
 
   const mdComponents = useMemo(() => ({
     p: ({ node, children, ...props }) => {
@@ -530,6 +532,16 @@ export default function Assistant() {
   // Keep doSendRef current so post-clear effect can call latest version
   useEffect(() => { doSendRef.current = doSend; }, [doSend]);
 
+  // Close message context menu on outside click / Escape
+  useEffect(() => {
+    if (!msgCtx) return;
+    const down = e => { if (!msgCtxRef.current?.contains(e.target)) setMsgCtx(null); };
+    const esc = e => { if (e.key === 'Escape') setMsgCtx(null); };
+    document.addEventListener('pointerdown', down);
+    document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', down); document.removeEventListener('keydown', esc); };
+  }, [msgCtx]);
+
   // After a clear-with-followup, fire the follow-up into the fresh chat
   useEffect(() => {
     if (afterClearRef.current && messages.length === 0 && !busy) {
@@ -588,6 +600,7 @@ export default function Assistant() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.22 }}
+                  onContextMenu={msg.streaming ? undefined : e => { e.preventDefault(); setMsgCtx({ x: e.clientX, y: e.clientY, msgId: msg.id }); }}
                   className={`flex gap-3.5 ${isUser ? 'flex-row-reverse' : ''}`}
                 >
                   <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center mt-0.5 ${
@@ -633,6 +646,40 @@ export default function Assistant() {
           </div>
         )}
       </div>
+
+      {/* Message context menu */}
+      {msgCtx && createPortal(
+        <>
+          <div className="fixed inset-0 z-[9998] backdrop-blur-sm bg-black/25" onClick={() => setMsgCtx(null)} />
+          <motion.div
+            ref={msgCtxRef}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.1 }}
+            className="fixed z-[9999] bg-[rgba(12,12,12,0.96)] border border-white/[0.09] rounded-xl shadow-2xl py-1.5 min-w-[180px]"
+            style={{ top: msgCtx.y, left: msgCtx.x }}
+          >
+            <div className="px-3 py-1.5 mb-1 border-b border-white/[0.06]">
+              <span className="text-[10px] text-white/25 uppercase tracking-widest">Message</span>
+            </div>
+            <button
+              onClick={() => {
+                setMessages(prev => {
+                  const idx = prev.findIndex(m => m.id === msgCtx.msgId);
+                  return idx !== -1 ? prev.slice(0, idx + 1) : prev;
+                });
+                setMsgCtx(null);
+                setTimeout(() => textRef.current?.focus(), 50);
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 transition-colors cursor-default"
+            >
+              <CornerUpLeft size={13} className="shrink-0 opacity-55" />
+              Branch from here
+            </button>
+          </motion.div>
+        </>,
+        document.body
+      )}
 
       {/* Input */}
       <div className="sticky bottom-0 bg-gradient-to-t from-black via-black/90 to-transparent pt-4 pb-4 px-6">

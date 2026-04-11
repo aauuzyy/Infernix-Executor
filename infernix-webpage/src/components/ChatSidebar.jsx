@@ -7,7 +7,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import {
   Send, Flame, ChevronDown, RotateCcw,
   Copy, Sparkles, HelpCircle, Edit3, Globe, Brain, User,
-  Code2, ArrowLeft, Check, ChevronRight,
+  Code2, ArrowLeft, Check, ChevronRight, CornerUpLeft,
 } from 'lucide-react';
 
 const STORAGE_KEY = 'infernix-chat-v1';
@@ -513,7 +513,8 @@ function MsgCtxMenu({ x, y, msg, onClose, onAIAction }) {
   }, [x, y]);
 
   const items = [
-    { icon: Copy, label: 'Copy message', action: () => navigator.clipboard.writeText(msg.content) },
+    { icon: Copy,         label: 'Copy message',    action: () => navigator.clipboard.writeText(msg.content) },
+    { icon: CornerUpLeft, label: 'Branch from here', action: () => onAIAction('rewind', msg) },
     ...(msg.role === 'assistant' ? [
       null,
       { icon: Globe,       label: 'Translate to English', action: () => onAIAction('translate', msg) },
@@ -796,6 +797,12 @@ export default function ChatSidebar() {
     if (action === 'edit') {
       setInput(msg.content);
       textRef.current?.focus();
+    } else if (action === 'rewind') {
+      setMessages(prev => {
+        const idx = prev.findIndex(m => m.id === msg.id);
+        return idx !== -1 ? prev.slice(0, idx + 1) : prev;
+      });
+      setTimeout(() => textRef.current?.focus(), 50);
     } else if (prompts[action]) {
       doSend(prompts[action]);
     }

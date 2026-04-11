@@ -80,6 +80,45 @@ REPLACE>>>
 </artifact-patch>
 You can include multiple FIND/REPLACE pairs in one patch for multiple changes. The FIND text must be an exact verbatim match of what is in the artifact. Only reuse artifact (full rewrite) when the change is so large that a patch would be longer than the original.`;
 
+async function webSearch(query) {
+  // Try Tavily first if key is configured (best quality, free tier)
+  const tavilyKey = (process.env.TAVILY_API_KEY || '').trim();
+  if (tavilyKey) {
+    try {
+      const ctrl = new AbortController();
+      setTimeout(() => ctrl.abort(), 4000);
+      const r = await fetch('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: tavilyKey, query, max_results: 3, search_depth: 'basic' }),
+        signal: ctrl.signal,
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const snippets = (d.results || []).map(r => `[${r.title}]\n${r.content.slice(0, 400)}`).join('\n\n');
+        if (snippets) return snippets;
+      }
+    } catch {}
+  }
+  // Fall back to DuckDuckGo instant answers — no key required
+  try {
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 3000);
+    const r = await fetch(
+      `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_redirect=1&no_html=1&skip_disambig=1`,
+      { signal: ctrl.signal }
+    );
+    if (r.ok) {
+      const d = await r.json();
+      const parts = [];
+      if (d.Abstract) parts.push(d.Abstract);
+      (d.RelatedTopics || []).slice(0, 4).forEach(t => { if (t.Text) parts.push(t.Text); });
+      if (parts.length) return parts.join('\n\n');
+    }
+  } catch {}
+  return null;
+}
+
 async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -105,7 +144,19 @@ async function handler(req, res) {
       ? `\n\nContext: The user is currently viewing the ${PAGE_LABELS[page]} page of the Infernix website.`
       : '';
     const dateCtx = `\n\nCurrent date and time: ${new Date().toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'full', timeStyle: 'short' })} UTC`;
-    const systemContent = SYSTEM + pageCtx + dateCtx;
+
+    // Web search for queries that likely need live/current info
+    const lastUserMsg = messages[messages.length - 1]?.content || '';
+    const SEARCH_RE = /latest|new.?update|recent|current version|today|patch|what.?s new|just released|updated|roblox update|news/i;
+    let searchCtx = '';
+    if (SEARCH_RE.test(lastUserMsg)) {
+      const results = await webSearch(lastUserMsg);
+      if (results) {
+        searchCtx = `\n\n== LIVE WEB SEARCH RESULTS ==\nThe following are live web results relevant to the user's query. Use them to supplement your knowledge where helpful:\n${results}`;
+      }
+    }
+
+    const systemContent = SYSTEM + pageCtx + dateCtx + searchCtx;
 
     const apiKeys = [
       process.env.GROQ_API_KEY,
