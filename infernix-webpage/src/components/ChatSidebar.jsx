@@ -334,22 +334,32 @@ function UserAvatar() {
 }
 
 // ── Thinking block ────────────────────────────────────────────
-function ThinkBlock({ content, seconds, live }) {
+function ThinkBlock({ content, seconds, live, liveContent }) {
   const [open, setOpen] = useState(false);
 
   if (live) {
     return (
-      <div className="flex items-center gap-2 mb-2 pl-0.5">
-        <div className="flex gap-0.5 items-end">
-          {[0, 1, 2].map(i => (
-            <div
-              key={i}
-              className="w-1 h-1 rounded-full bg-white/25 animate-bounce"
-              style={{ animationDelay: `${i * 0.15}s` }}
-            />
-          ))}
+      <div className="flex flex-col gap-1 mb-2">
+        <div className="flex items-center gap-2 pl-0.5">
+          <div className="flex gap-0.5 items-end">
+            {[0, 1, 2].map(i => (
+              <div
+                key={i}
+                className="w-1 h-1 rounded-full bg-white/25 animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+          </div>
+          <span className="text-[10px] text-white/25 italic">Thinking…</span>
         </div>
-        <span className="text-[10px] text-white/25 italic">Thinking…</span>
+        {liveContent && (
+          <div
+            className="pl-2.5 border-l border-purple-500/20 text-white/15 text-[9px] leading-relaxed max-h-12 overflow-hidden"
+            style={{ maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)' }}
+          >
+            {liveContent}
+          </div>
+        )}
       </div>
     );
   }
@@ -472,7 +482,7 @@ function MsgBubble({ msg, onCtx, artifacts, onOpenArtifact, onSummarize }) {
 
       {/* Thinking */}
       {!isUser && (msg.streaming && !msg.content
-        ? <ThinkBlock live />
+        ? <ThinkBlock live liveContent={msg.inThink ? msg.thinking : undefined} />
         : <ThinkBlock content={msg.thinking} seconds={msg.thinkTime} />
       )}
 
@@ -661,19 +671,77 @@ export default function ChatSidebar() {
         body: JSON.stringify({ messages: history, page: pathname, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }),
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      // --- SSE stream reader ---
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = '';
+      let rawContent = '';
+      let thinkContent = '';
+      let mainContent = '';
+      let inThinkBlock = false;
+      let thinkDone = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]' || !payload.startsWith('{')) continue;
+          let parsed;
+          try { parsed = JSON.parse(payload); } catch { continue; }
+          if (parsed.error) throw new Error(parsed.error);
+          const delta = parsed.choices?.[0]?.delta?.content ?? '';
+          if (!delta) continue;
+          rawContent += delta;
+          // Track <think>...</think> in real-time
+          if (!thinkDone) {
+            if (!inThinkBlock) {
+              if (rawContent.startsWith('<think>')) {
+                inThinkBlock = true;
+              } else if (rawContent.length >= 7) {
+                thinkDone = true;
+                mainContent = rawContent;
+              }
+            }
+            if (inThinkBlock) {
+              const endIdx = rawContent.indexOf('</think>');
+              if (endIdx !== -1) {
+                thinkContent = rawContent.slice(7, endIdx).trim();
+                mainContent = rawContent.slice(endIdx + 8).trimStart();
+                inThinkBlock = false;
+                thinkDone = true;
+              } else {
+                thinkContent = rawContent.slice(7);
+              }
+            }
+          } else if (!inThinkBlock) {
+            const thinkEnd = rawContent.indexOf('</think>');
+            mainContent = thinkEnd !== -1 ? rawContent.slice(thinkEnd + 8).trimStart() : rawContent;
+          }
+          const elapsedLive = Math.max(1, Math.round((Date.now() - reqStart) / 1000));
+          const thinkTimeLive = thinkContent ? Math.max(elapsedLive, Math.round(thinkContent.length / 400)) : elapsedLive;
+          setMessages(prev => prev.map(m => m.id === aiId ? {
+            ...m,
+            content: mainContent,
+            thinking: thinkContent,
+            thinkTime: (thinkContent || inThinkBlock) ? thinkTimeLive : 0,
+            inThink: inThinkBlock,
+            streaming: true,
+          } : m));
+        }
       }
 
-      const data = await res.json();
-      const raw = data.content ?? '';
+      // --- Stream complete ---
+      const full = mainContent || rawContent;
+      const think = thinkContent;
       const elapsed = Math.max(1, Math.round((Date.now() - reqStart) / 1000));
-
-      let think = '', full = raw;
-      const thinkMatch = raw.match(/^<think>([\s\S]*?)<\/think>\s*/);
-      if (thinkMatch) { think = thinkMatch[1].trim(); full = raw.slice(thinkMatch[0].length); }
-      const thinkTime = Math.max(elapsed, think ? Math.round(think.length / 400) : 0);
+      const thinkTime = think ? Math.max(elapsed, Math.round(think.length / 400)) : 0;
 
       const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
       const unFenced = cleaned
@@ -741,17 +809,8 @@ export default function ChatSidebar() {
           : m
         ));
       } else {
-        let revealed = '';
-        for (let i = 0; i < unFenced.length; i++) {
-          revealed += unFenced[i];
-          const snap = revealed;
-          setMessages(prev => prev.map(m =>
-            m.id === aiId ? { ...m, content: snap, thinking: think, thinkTime, streaming: true } : m
-          ));
-          await new Promise(r => setTimeout(r, 8));
-        }
         setMessages(prev => prev.map(m =>
-          m.id === aiId ? { ...m, content: unFenced, thinking: think, thinkTime, streaming: false } : m
+          m.id === aiId ? { ...m, content: unFenced, rawContent: full, thinking: think, thinkTime, streaming: false } : m
         ));
       }
 

@@ -256,12 +256,22 @@ function TypingDots() {
   );
 }
 
-function ThinkBlock({ content, seconds, live }) {
+function ThinkBlock({ content, seconds, live, liveContent }) {
   const [open, setOpen] = useState(false);
   if (live) return (
-    <div className="flex items-center gap-2 text-white/25 text-xs mb-3">
-      <Brain size={11} className="animate-pulse text-purple-400/60" />
-      <span>Thinking...</span>
+    <div className="flex flex-col gap-1 mb-3">
+      <div className="flex items-center gap-2 text-white/25 text-xs">
+        <Brain size={11} className="animate-pulse text-purple-400/60" />
+        <span>Thinking...</span>
+      </div>
+      {liveContent && (
+        <div
+          className="pl-3 border-l border-purple-500/20 text-white/15 text-[10px] leading-relaxed max-h-16 overflow-hidden"
+          style={{ maskImage: 'linear-gradient(to bottom, black 40%, transparent 100%)' }}
+        >
+          {liveContent}
+        </div>
+      )}
     </div>
   );
   if (!seconds) return null;
@@ -417,19 +427,77 @@ export default function Assistant() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: history, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }),
       });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || `HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      // --- SSE stream reader ---
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = '';
+      let rawContent = '';
+      let thinkContent = '';
+      let mainContent = '';
+      let inThinkBlock = false;
+      let thinkDone = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        sseBuffer += decoder.decode(value, { stream: true });
+        const lines = sseBuffer.split('\n');
+        sseBuffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const payload = line.slice(6).trim();
+          if (payload === '[DONE]' || !payload.startsWith('{')) continue;
+          let parsed;
+          try { parsed = JSON.parse(payload); } catch { continue; }
+          if (parsed.error) throw new Error(parsed.error);
+          const delta = parsed.choices?.[0]?.delta?.content ?? '';
+          if (!delta) continue;
+          rawContent += delta;
+          // Track <think>...</think> in real-time
+          if (!thinkDone) {
+            if (!inThinkBlock) {
+              if (rawContent.startsWith('<think>')) {
+                inThinkBlock = true;
+              } else if (rawContent.length >= 7) {
+                thinkDone = true;
+                mainContent = rawContent;
+              }
+            }
+            if (inThinkBlock) {
+              const endIdx = rawContent.indexOf('</think>');
+              if (endIdx !== -1) {
+                thinkContent = rawContent.slice(7, endIdx).trim();
+                mainContent = rawContent.slice(endIdx + 8).trimStart();
+                inThinkBlock = false;
+                thinkDone = true;
+              } else {
+                thinkContent = rawContent.slice(7);
+              }
+            }
+          } else if (!inThinkBlock) {
+            const thinkEnd = rawContent.indexOf('</think>');
+            mainContent = thinkEnd !== -1 ? rawContent.slice(thinkEnd + 8).trimStart() : rawContent;
+          }
+          const elapsedLive = Math.max(1, Math.round((Date.now() - reqStart) / 1000));
+          const thinkTimeLive = thinkContent ? Math.max(elapsedLive, Math.round(thinkContent.length / 400)) : elapsedLive;
+          setMessages(prev => prev.map(m => m.id === aiId ? {
+            ...m,
+            content: mainContent,
+            thinking: thinkContent,
+            thinkTime: (thinkContent || inThinkBlock) ? thinkTimeLive : 0,
+            inThink: inThinkBlock,
+            streaming: true,
+          } : m));
+        }
       }
 
-      const data = await res.json();
-      const raw = data.content ?? '';
+      // --- Stream complete ---
+      const full = mainContent || rawContent;
+      const think = thinkContent;
       const elapsed = Math.max(1, Math.round((Date.now() - reqStart) / 1000));
-
-      let think = '', full = raw;
-      const thinkMatch = raw.match(/^<think>([\s\S]*?)<\/think>\s*/);
-      if (thinkMatch) { think = thinkMatch[1].trim(); full = raw.slice(thinkMatch[0].length); }
-      const thinkTime = Math.max(elapsed, think ? Math.round(think.length / 400) : 0);
+      const thinkTime = think ? Math.max(elapsed, Math.round(think.length / 400)) : 0;
 
       const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
       const unFenced = cleaned
@@ -510,14 +578,10 @@ export default function Assistant() {
           : m
         ));
       } else {
-        let revealed = '';
-        for (let i = 0; i < unFenced.length; i++) {
-          revealed += unFenced[i];
-          const snap = revealed;
-          setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: snap, thinking: think, thinkTime, streaming: true } : m));
-          await new Promise(r => setTimeout(r, 8));
-        }
-        setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: unFenced, thinking: think, thinkTime, streaming: false } : m));
+        setMessages(prev => prev.map(m => m.id === aiId
+          ? { ...m, content: unFenced, rawContent: full, thinking: think, thinkTime, streaming: false }
+          : m
+        ));
       }
       if (hasClear) setTimeout(() => {
         if (afterMsg) afterClearRef.current = afterMsg;
@@ -634,7 +698,7 @@ export default function Assistant() {
                       )}
                     </div>
                     {!isUser && (msg.streaming && !msg.content
-                      ? <ThinkBlock live />
+                      ? <ThinkBlock live liveContent={msg.inThink ? msg.thinking : undefined} />
                       : <ThinkBlock content={msg.thinking} seconds={msg.thinkTime} />
                     )}
                     {isUser ? (

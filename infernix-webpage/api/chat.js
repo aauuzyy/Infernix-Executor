@@ -187,14 +187,21 @@ async function handler(req, res) {
 
     const groqMessages = [{ role: 'system', content: systemContent }, ...sanitized];
 
-    async function callGroq(model, timeoutMs, key) {
+    // SSE streaming headers — Vercel treats streaming responses differently,
+    // allowing much longer execution than the 10s non-streaming limit
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    async function streamGroq(model, key, timeoutMs) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
         const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
           headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ model, messages: groqMessages, stream: false, temperature: 0.6, max_tokens: model.includes('deepseek') ? 1024 : 2048 }),
+          body: JSON.stringify({ model, messages: groqMessages, stream: true, temperature: 0.6, max_tokens: model.includes('deepseek') ? 1024 : 2048 }),
           signal: controller.signal,
         });
         clearTimeout(timer);
@@ -205,54 +212,49 @@ async function handler(req, res) {
       }
     }
 
-    // Try deepseek with the first available key only — short 3s window.
-    // Vercel Hobby has a 10s hard limit; web search can use up to 3s, leaving ~6s for AI.
-    // Deepseek produces <think> content; llama is the reliable fast fallback.
+    // Try deepseek first (produces <think> reasoning), fall back to llama on any error
     let groqRes;
-    let usedFallback = false;
     try {
-      const r = await callGroq('deepseek-r1-distill-qwen-32b', 3000, apiKeys[0]);
-      if (r.ok) {
-        groqRes = r; // success — use deepseek response
-      } else {
-        usedFallback = true; // any error (400, 429, 503, etc.) → fall back
-      }
-    } catch {
-      usedFallback = true; // timeout or network error
-    }
+      const r = await streamGroq('deepseek-r1-distill-qwen-32b', apiKeys[0], 4000);
+      if (r.ok) groqRes = r;
+    } catch {}
 
-    if (usedFallback || !groqRes) {
-      // Rotate keys for llama fallback — it's fast (usually <2s) and has high token limits
-      let lastErr;
+    if (!groqRes) {
       for (const key of apiKeys) {
         try {
-          groqRes = await callGroq('llama-3.3-70b-versatile', 5000, key);
-          if (groqRes.ok || groqRes.status !== 429) break;
-          groqRes = null;
-        } catch (e) {
-          lastErr = e;
-          groqRes = null;
-        }
+          const r = await streamGroq('llama-3.3-70b-versatile', key, 8000);
+          if (r.ok) { groqRes = r; break; }
+        } catch {}
       }
-      if (!groqRes && lastErr) throw lastErr;
     }
 
     if (!groqRes || !groqRes.ok) {
       const errText = groqRes ? await groqRes.text() : 'No response from any key';
       const status = groqRes?.status ?? 502;
-      console.error(`[chat api] Groq ${status} — sanitized msg count: ${sanitized.length} — error:`, errText);
-      const friendly = status === 429
-        ? 'The AI is busy right now. Please try again in a few seconds.'
-        : 'Failed to get a response from the AI. Please try again.';
-      return res.status(502).json({ error: friendly, detail: errText });
+      console.error(`[chat api] Groq ${status}:`, errText);
+      const friendly = status === 429 ? 'The AI is busy right now. Please try again in a few seconds.' : 'Failed to get a response from the AI. Please try again.';
+      res.write(`data: ${JSON.stringify({ error: friendly })}\n\n`);
+      res.end();
+      return;
     }
 
-    const data = await groqRes.json();
-    const content = data.choices?.[0]?.message?.content ?? '';
-    return res.status(200).json({ content });
+    // Pipe Groq SSE stream straight to the client
+    const reader = groqRes.body.getReader();
+    const decoder = new TextDecoder();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(decoder.decode(value, { stream: true }));
+      }
+    } catch (e) {
+      console.error('[chat api] stream pipe error:', e?.message);
+    }
+    res.end();
   } catch (err) {
     console.error('[chat api error]', err?.message ?? err);
     if (!res.headersSent) return res.status(500).json({ error: err?.message ?? 'Unknown error' });
+    res.end();
   }
 }
 
