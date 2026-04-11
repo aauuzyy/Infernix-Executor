@@ -230,7 +230,7 @@ export default function Assistant() {
       const artMatch = flat.trim().match(/^\[ARTIFACT:([^\]]+)\]$/);
       if (artMatch) {
         const art = artifacts[artMatch[1]];
-        if (art) return <ArtifactCard artifact={art} onClick={() => setOpenArtifactId(artMatch[1])} />;
+        if (art) return <ArtifactCard artifact={art} onClick={() => setOpenArtifactId(prev => prev === artMatch[1] ? null : artMatch[1])} />;
       }
       const loadMatch = flat.trim().match(/^\[ARTIFACT_LOADING:(.+)\]$/);
       if (loadMatch) {

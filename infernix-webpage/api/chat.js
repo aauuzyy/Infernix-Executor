@@ -87,7 +87,7 @@ async function handler(req, res) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'qwen/qwen3-32b',
+        model: 'llama-3.3-70b-versatile',
         messages: [{ role: 'system', content: SYSTEM }, ...messages],
         stream: false,
         temperature: 0.6,
