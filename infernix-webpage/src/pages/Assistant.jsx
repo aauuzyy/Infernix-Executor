@@ -9,13 +9,15 @@ import { Send, Flame, Brain, ChevronDown, ChevronRight, RotateCcw, User, Copy, C
 const STORAGE_KEY = 'infernix-assistant-v1';
 const ARTIFACT_KEY = 'infernix-assistant-artifacts-v1';
 const NAV_RE = /\[NAV:(\/[^\]]*)\]/g;
-const CLEAR_RE = /\[CLEAR\]/;
+const AFTER_RE = /\[AFTER:([\s\S]*?)\]/;
 
 function stripNav(text) {
-  const matches = [...text.matchAll(NAV_RE)];
-  const path = matches.length ? matches[matches.length - 1][1] : null;
-  const hasClear = CLEAR_RE.test(text);
-  return { path, hasClear, text: text.replace(NAV_RE, '').replace(/\[CLEAR\]/g, '').trim() };
+  const navMatches = [...text.matchAll(NAV_RE)];
+  const path = navMatches.length ? navMatches[navMatches.length - 1][1] : null;
+  const hasClear = /\[CLEAR\]/.test(text);
+  const afterMatch = AFTER_RE.exec(text);
+  const afterMsg = afterMatch ? afterMatch[1].trim() : null;
+  return { path, hasClear, afterMsg, text: text.replace(NAV_RE, '').replace(/\[CLEAR\]/g, '').replace(AFTER_RE, '').trim() };
 }
 
 const SUGGESTIONS = [
@@ -305,6 +307,8 @@ export default function Assistant() {
   const [patchedArtifactId, setPatchedArtifactId] = useState(null);
   const bottomRef = useRef(null);
   const textRef = useRef(null);
+  const afterClearRef = useRef(null);
+  const doSendRef = useRef(null);
 
   const mdComponents = useMemo(() => ({
     p: ({ node, children, ...props }) => {
@@ -410,7 +414,7 @@ export default function Assistant() {
       if (thinkMatch) { think = thinkMatch[1].trim(); full = raw.slice(thinkMatch[0].length); }
       const thinkTime = think ? Math.max(1, Math.round(think.length / 400)) : 0;
 
-      const { path, hasClear, text: cleaned } = stripNav(full);
+      const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
       const newArtifacts = extractArtifacts(cleaned);
       const patches = extractPatches(cleaned);
 
@@ -496,6 +500,7 @@ export default function Assistant() {
         setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: cleaned, thinking: think, thinkTime, streaming: false } : m));
       }
       if (hasClear) setTimeout(() => {
+        if (afterMsg) afterClearRef.current = afterMsg;
         setMessages([]);
         setArtifacts({});
         setOpenArtifactId(null);
@@ -515,6 +520,18 @@ export default function Assistant() {
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
   }, [doSend]);
+
+  // Keep doSendRef current so post-clear effect can call latest version
+  useEffect(() => { doSendRef.current = doSend; }, [doSend]);
+
+  // After a clear-with-followup, fire the follow-up into the fresh chat
+  useEffect(() => {
+    if (afterClearRef.current && messages.length === 0 && !busy) {
+      const msg = afterClearRef.current;
+      afterClearRef.current = null;
+      doSendRef.current?.(msg);
+    }
+  }, [messages, busy]);
 
   const isEmpty = messages.length === 0;
 

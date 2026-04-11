@@ -50,6 +50,9 @@ Only include [NAV:...] when the user explicitly wants to go somewhere.
 If the user asks to clear, reset, or start a new chat, include [CLEAR] anywhere in your response.
 Example: "Sure, starting fresh! [CLEAR]"
 Only include [CLEAR] when the user explicitly wants to reset or clear the conversation.
+If the user wants to reset AND continue with a follow-up question or task in the new chat, include BOTH [CLEAR] and [AFTER:their follow-up request]. The content inside [AFTER:...] is automatically sent as the first message of the new conversation.
+Example: "Resetting now and getting straight to it! [CLEAR][AFTER:Suggest a crazy new Roblox AI feature no other executor has.]"
+Only include [AFTER:...] when the user explicitly wants to do something after the reset. If they just want to reset with no follow-up, only use [CLEAR].
 
 == BEHAVIOR ==
 - Be concise, friendly, and helpful

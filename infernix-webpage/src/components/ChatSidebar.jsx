@@ -10,13 +10,15 @@ import {
 
 const STORAGE_KEY = 'infernix-chat-v1';
 const NAV_RE = /\[NAV:(\/[^\]]*)\]/g;
-const CLEAR_RE = /\[CLEAR\]/;
+const AFTER_RE = /\[AFTER:([\s\S]*?)\]/;
 
 function stripNav(text) {
-  const matches = [...text.matchAll(NAV_RE)];
-  const path = matches.length ? matches[matches.length - 1][1] : null;
-  const hasClear = CLEAR_RE.test(text);
-  return { path, hasClear, text: text.replace(NAV_RE, '').replace(/\[CLEAR\]/g, '').trim() };
+  const navMatches = [...text.matchAll(NAV_RE)];
+  const path = navMatches.length ? navMatches[navMatches.length - 1][1] : null;
+  const hasClear = /\[CLEAR\]/.test(text);
+  const afterMatch = AFTER_RE.exec(text);
+  const afterMsg = afterMatch ? afterMatch[1].trim() : null;
+  return { path, hasClear, afterMsg, text: text.replace(NAV_RE, '').replace(/\[CLEAR\]/g, '').replace(AFTER_RE, '').trim() };
 }
 
 // ── Avatars ───────────────────────────────────────────────────
@@ -266,6 +268,8 @@ export default function ChatSidebar() {
 
   const bottomRef = useRef(null);
   const textRef = useRef(null);
+  const afterClearRef = useRef(null);
+  const doSendRef = useRef(null);
 
   // Persist (only finalized messages)
   useEffect(() => {
@@ -348,7 +352,7 @@ export default function ChatSidebar() {
       }
       const thinkTime = think ? Math.max(1, Math.round(think.length / 400)) : 0;
 
-      const { path, hasClear, text: cleaned } = stripNav(full);
+      const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
 
       // Typewriter reveal
       let revealed = '';
@@ -368,6 +372,7 @@ export default function ChatSidebar() {
       ));
 
       if (hasClear) setTimeout(() => {
+        if (afterMsg) afterClearRef.current = afterMsg;
         setMessages([]);
         setBusy(false);
         localStorage.removeItem(STORAGE_KEY);
@@ -384,6 +389,18 @@ export default function ChatSidebar() {
 
     setBusy(false);
   }, [messages, busy, input, navigate]);
+
+  // Keep doSendRef current so post-clear effect can call latest version
+  useEffect(() => { doSendRef.current = doSend; }, [doSend]);
+
+  // After a clear-with-followup, fire the follow-up into the fresh chat
+  useEffect(() => {
+    if (afterClearRef.current && messages.length === 0 && !busy) {
+      const msg = afterClearRef.current;
+      afterClearRef.current = null;
+      doSendRef.current?.(msg);
+    }
+  }, [messages, busy]);
 
   const handleCtx = useCallback((e, msg) => {
     e.preventDefault();
