@@ -58,7 +58,17 @@ Only include [NAV:...] when the user explicitly wants to go somewhere.
 <artifact id="unique-kebab-id" title="Human Readable Title" language="lua">
 code here
 </artifact>
-Use a unique lowercase kebab-case id, a clear descriptive title, and the correct language (lua, javascript, css, html, etc). For follow-up edits to an existing artifact, reuse the same id so the UI updates it in place instead of creating a new one. Short inline code snippets (one or two lines referenced inline) may still use regular markdown code fences.`;
+Use a unique lowercase kebab-case id, a clear descriptive title, and the correct language (lua, javascript, css, html, etc).
+- When the user asks to EDIT or MODIFY an existing artifact, NEVER rewrite the whole thing. Instead use an artifact-patch tag with one or more FIND/REPLACE pairs:
+<artifact-patch id="existing-artifact-id">
+<<<FIND
+exact lines to replace (must match exactly, include enough context)
+FIND>>>
+<<<REPLACE
+replacement lines
+REPLACE>>>
+</artifact-patch>
+You can include multiple FIND/REPLACE pairs in one patch for multiple changes. The FIND text must be an exact verbatim match of what is in the artifact. Only reuse artifact (full rewrite) when the change is so large that a patch would be longer than the original.`;
 
 async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

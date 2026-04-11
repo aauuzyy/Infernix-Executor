@@ -25,6 +25,8 @@ const SUGGESTIONS = [
 
 // Artifact parsing
 const ARTIFACT_SRC = '<artifact\\s+id="([^"]+)"\\s+title="([^"]+)"\\s+language="([^"]+)">((?:.|\n)*?)<\/artifact>';
+const PATCH_SRC = '<artifact-patch\\s+id="([^"]+)">((?:.|\n)*?)<\/artifact-patch>';
+
 function extractArtifacts(text) {
   const found = {};
   const re = new RegExp(ARTIFACT_SRC, 'g');
@@ -34,10 +36,31 @@ function extractArtifacts(text) {
   }
   return found;
 }
+
+function extractPatches(text) {
+  const found = [];
+  const re = new RegExp(PATCH_SRC, 'g');
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    found.push({ id: m[1], patchContent: m[2] });
+  }
+  return found;
+}
+
+function applyPatch(code, patchContent) {
+  const pairRe = /<<<FIND\n([\s\S]*?)\nFIND>>>\n<<<REPLACE\n([\s\S]*?)\nREPLACE>>>/g;
+  let result = code;
+  let m;
+  while ((m = pairRe.exec(patchContent)) !== null) {
+    result = result.replace(m[1], m[2]);
+  }
+  return result;
+}
+
 function toDisplayContent(text) {
-  let out = text.replace(new RegExp(ARTIFACT_SRC, 'g'), (_, id) => `\n[ARTIFACT:${id}]\n`);
-  out = out.replace(/<artifact\s+id="[^"]+"\s+title="([^"]+)"[^>]*>(?:.|\n)*/g,
-    (_, title) => `\n[ARTIFACT_LOADING:${title}]\n`);
+  let out = text
+    .replace(new RegExp(ARTIFACT_SRC, 'g'), (_, id) => `\n[ARTIFACT:${id}]\n`)
+    .replace(new RegExp(PATCH_SRC, 'g'), (_, id) => `\n[ARTIFACT:${id}]\n`);
   return out;
 }
 
@@ -137,7 +160,7 @@ function ThinkingWords() {
   );
 }
 
-function ArtifactPanel({ artifact, isStreaming, onClose }) {
+function ArtifactPanel({ artifact, isStreaming, justPatched, onClose }) {
   const [copied, setCopied] = useState(false);
   const codeRef = useRef(null);
   const copy = useCallback(() => {
@@ -172,6 +195,16 @@ function ArtifactPanel({ artifact, isStreaming, onClose }) {
                 <span className="w-1 h-1 rounded-full bg-emerald-400/60 animate-pulse" />
                 generating
               </span>
+            )}
+            {justPatched && !isStreaming && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex items-center gap-1 text-[10px] text-emerald-400/60"
+              >
+                <Check size={9} /> updated
+              </motion.span>
             )}
           </div>
         </div>
@@ -267,6 +300,7 @@ export default function Assistant() {
   });
   const [openArtifactId, setOpenArtifactId] = useState(null);
   const [streamingArtifact, setStreamingArtifact] = useState(null);
+  const [patchedArtifactId, setPatchedArtifactId] = useState(null);
   const bottomRef = useRef(null);
   const textRef = useRef(null);
 
@@ -376,7 +410,44 @@ export default function Assistant() {
 
       const { path, text: cleaned } = stripNav(full);
       const newArtifacts = extractArtifacts(cleaned);
-      if (Object.keys(newArtifacts).length > 0) {
+      const patches = extractPatches(cleaned);
+
+      if (patches.length > 0) {
+        // Patch mode — apply diffs to existing code, animate only replacement
+        setMessages(prev => prev.map(m => m.id === aiId
+          ? { ...m, content: '', thinking: think, thinkTime, streaming: true, generatingArtifact: true }
+          : m
+        ));
+        for (const patch of patches) {
+          const existing = artifacts[patch.id];
+          if (!existing) continue;
+          setOpenArtifactId(patch.id);
+          const patched = applyPatch(existing.code, patch.patchContent);
+          // Find the first changed char position and stream from there
+          let diffStart = 0;
+          while (diffStart < existing.code.length && diffStart < patched.length && existing.code[diffStart] === patched[diffStart]) diffStart++;
+          // Show existing code up to diff point instantly, then stream the rest
+          const prefix = patched.slice(0, diffStart);
+          setStreamingArtifact({ ...existing, code: prefix });
+          let revealed = prefix;
+          for (let i = diffStart; i < patched.length; i++) {
+            revealed += patched[i];
+            const snap = revealed;
+            setStreamingArtifact(s => s ? { ...s, code: snap } : null);
+            await new Promise(r => setTimeout(r, 4));
+          }
+          const updated = { ...existing, code: patched };
+          setArtifacts(prev => ({ ...prev, [patch.id]: updated }));
+          setStreamingArtifact(null);
+          setPatchedArtifactId(patch.id);
+          setTimeout(() => setPatchedArtifactId(null), 2500);
+        }
+        const displayContent = toDisplayContent(cleaned);
+        setMessages(prev => prev.map(m => m.id === aiId
+          ? { ...m, content: displayContent, rawContent: cleaned, thinking: think, thinkTime, streaming: false, generatingArtifact: false }
+          : m
+        ));
+      } else if (Object.keys(newArtifacts).length > 0) {
         // Show thinking state while animating artifact
         setMessages(prev => prev.map(m => m.id === aiId
           ? { ...m, content: '', thinking: think, thinkTime, streaming: true, generatingArtifact: true }
@@ -559,6 +630,7 @@ export default function Assistant() {
             <ArtifactPanel
               artifact={streamingArtifact?.id === openArtifactId ? streamingArtifact : artifacts[openArtifactId]}
               isStreaming={!!streamingArtifact && streamingArtifact.id === openArtifactId}
+              justPatched={patchedArtifactId === openArtifactId}
               onClose={() => { setOpenArtifactId(null); setStreamingArtifact(null); }}
             />
           )}
