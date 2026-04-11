@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { Send, Flame, Brain, ChevronDown, ChevronRight, RotateCcw, User, Copy, Check, X, Code2, CornerUpLeft } from 'lucide-react';
+import VerificationPanel from '../components/VerificationPanel';
+import { runVerifyLoop } from '../utils/verify';
 
 const STORAGE_KEY = 'infernix-assistant-v1';
 const ARTIFACT_KEY = 'infernix-assistant-artifacts-v1';
@@ -326,6 +328,7 @@ export default function Assistant() {
   const [streamingArtifact, setStreamingArtifact] = useState(null);
   const [patchedArtifactId, setPatchedArtifactId] = useState(null);
   const [msgCtx, setMsgCtx] = useState(null); // { x, y, msgId }
+  const [verif, setVerif] = useState(null);
   const bottomRef = useRef(null);
   const textRef = useRef(null);
   const afterClearRef = useRef(null);
@@ -583,12 +586,20 @@ export default function Assistant() {
           : m
         ));
       }
+
+      // Trigger verification for any new Lua/Luau artifacts (fire-and-forget — doesn't block busy)
+      const luaArtifact = Object.values(newArtifacts).find(a =>
+        ['lua', 'luau'].includes(a.language?.toLowerCase())
+      );
+      if (luaArtifact) runVerifyLoop(luaArtifact, setVerif, setArtifacts);
+
       if (hasClear) setTimeout(() => {
         if (afterMsg) afterClearRef.current = afterMsg;
         setMessages([]);
         setArtifacts({});
         setOpenArtifactId(null);
         setStreamingArtifact(null);
+        setVerif(null);
         setBusy(false);
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(ARTIFACT_KEY);
@@ -805,6 +816,23 @@ export default function Assistant() {
           )}
         </AnimatePresence>,
         document.body
-      )}    </div>
+      )}
+
+      {createPortal(
+        <AnimatePresence>
+          {verif && (
+            <VerificationPanel
+              steps={verif.steps}
+              attempt={verif.attempt}
+              maxAttempts={verif.maxAttempts}
+              issues={verif.issues}
+              passed={verif.passed}
+              rightOffset={openArtifactId ? 496 : 16}
+            />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </div>
   );
 }

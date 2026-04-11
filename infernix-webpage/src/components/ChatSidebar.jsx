@@ -9,6 +9,8 @@ import {
   Copy, Sparkles, HelpCircle, Edit3, Globe, Brain, User,
   Code2, ArrowLeft, Check, ChevronRight, CornerUpLeft,
 } from 'lucide-react';
+import VerificationPanel from './VerificationPanel';
+import { runVerifyLoop } from '../utils/verify';
 
 const STORAGE_KEY = 'infernix-chat-v1';
 const NAV_RE = /\[NAV:(\/[^\]]*)\]/g;
@@ -604,7 +606,7 @@ export default function ChatSidebar() {
   });
   const [openArtifactId, setOpenArtifactId] = useState(null);
   const [streamingArtifact, setStreamingArtifact] = useState(null);
-
+  const [verif, setVerif] = useState(null);
   const bottomRef = useRef(null);
   const textRef = useRef(null);
   const afterClearRef = useRef(null);
@@ -814,12 +816,19 @@ export default function ChatSidebar() {
         ));
       }
 
+      // Trigger verification for any new Lua/Luau artifacts
+      const luaArtifact = Object.values(newArtifacts).find(a =>
+        ['lua', 'luau'].includes(a.language?.toLowerCase())
+      );
+      if (luaArtifact) runVerifyLoop(luaArtifact, setVerif, setArtifacts);
+
       if (hasClear) setTimeout(() => {
         if (afterMsg) afterClearRef.current = afterMsg;
         setMessages([]);
         setArtifacts({});
         setOpenArtifactId(null);
         setStreamingArtifact(null);
+        setVerif(null);
         setBusy(false);
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(ARTIFACT_KEY);
@@ -1011,6 +1020,22 @@ export default function ChatSidebar() {
           onClose={() => setCtxMenu(null)}
           onAIAction={handleAIAction}
         />
+      )}
+
+      {createPortal(
+        <AnimatePresence>
+          {verif && (
+            <VerificationPanel
+              steps={verif.steps}
+              attempt={verif.attempt}
+              maxAttempts={verif.maxAttempts}
+              issues={verif.issues}
+              passed={verif.passed}
+              rightOffset={336}
+            />
+          )}
+        </AnimatePresence>,
+        document.body
       )}
     </>
   );
