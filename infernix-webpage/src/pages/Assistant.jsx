@@ -601,7 +601,7 @@ export default function Assistant() {
                         </span>
                       )}
                     </div>
-                    {!isUser && (msg.streaming && msg.inThink
+                    {!isUser && (msg.streaming && !msg.content
                       ? <ThinkBlock live />
                       : <ThinkBlock content={msg.thinking} seconds={msg.thinkTime} />
                     )}

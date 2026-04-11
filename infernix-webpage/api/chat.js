@@ -89,13 +89,22 @@ async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    let messages;
+    let messages, page;
     if (req.body && typeof req.body === 'object') {
       messages = req.body.messages;
+      page = req.body.page;
     } else if (typeof req.body === 'string') {
-      messages = JSON.parse(req.body).messages;
+      const parsed = JSON.parse(req.body);
+      messages = parsed.messages;
+      page = parsed.page;
     }
     if (!Array.isArray(messages)) return res.status(400).json({ error: 'Missing messages' });
+
+    const PAGE_LABELS = { '/': 'Home', '/download': 'Download', '/about': 'About', '/credits': 'Credits', '/assistant': 'Assistant' };
+    const pageCtx = page && PAGE_LABELS[page]
+      ? `\n\nContext: The user is currently viewing the ${PAGE_LABELS[page]} page of the Infernix website.`
+      : '';
+    const systemContent = SYSTEM + pageCtx;
 
     const apiKey = (process.env.GROQ_API_KEY || '').trim();
     if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not set' });
@@ -108,7 +117,7 @@ async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'llama-3.3-70b-versatile',
-        messages: [{ role: 'system', content: SYSTEM }, ...messages],
+        messages: [{ role: 'system', content: systemContent }, ...messages],
         stream: false,
         temperature: 0.6,
         max_tokens: 1024,

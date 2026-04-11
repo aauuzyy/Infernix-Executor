@@ -140,29 +140,32 @@ function SidebarCodeBlock({ language, children, onSummarize }) {
         </SyntaxHighlighter>
       </div>
       {ctxMenu && createPortal(
-        <motion.div
-          ref={ctxRef}
-          initial={{ opacity: 0, scale: 0.95, y: -4 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.1 }}
-          style={{ top: ctxMenu.y, left: ctxMenu.x }}
-          className="fixed z-[9999] min-w-[180px] rounded-xl border border-white/10 backdrop-blur-xl bg-black/80 shadow-2xl overflow-hidden py-1"
-        >
-          <button
-            onClick={() => { onSummarize?.(ctxMenu.code); setCtxMenu(null); }}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 transition-colors cursor-default"
+        <>
+          <div className="fixed inset-0 z-[9998] backdrop-blur-sm bg-black/25" />
+          <motion.div
+            ref={ctxRef}
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.1 }}
+            style={{ top: ctxMenu.y, left: ctxMenu.x }}
+            className="fixed z-[9999] min-w-[180px] rounded-xl border border-white/10 bg-black/90 shadow-2xl overflow-hidden py-1"
           >
-            <Sparkles size={13} className="shrink-0 opacity-55" />
-            Summarize this code
-          </button>
-          <button
-            onClick={() => { navigator.clipboard.writeText(ctxMenu.code); setCtxMenu(null); }}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 transition-colors cursor-default"
-          >
-            <Copy size={13} className="shrink-0 opacity-55" />
-            Copy code
-          </button>
-        </motion.div>,
+            <button
+              onClick={() => { onSummarize?.(ctxMenu.code); setCtxMenu(null); }}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 transition-colors cursor-default"
+            >
+              <Sparkles size={13} className="shrink-0 opacity-55" />
+              Summarize this code
+            </button>
+            <button
+              onClick={() => { navigator.clipboard.writeText(ctxMenu.code); setCtxMenu(null); }}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 transition-colors cursor-default"
+            >
+              <Copy size={13} className="shrink-0 opacity-55" />
+              Copy code
+            </button>
+          </motion.div>
+        </>,
         document.body
       )}
     </div>
@@ -279,29 +282,32 @@ function SidebarArtifactView({ artifact, isStreaming, onClose, onSummarize }) {
 
       {/* Code context menu */}
       {codeCtx && createPortal(
-        <motion.div
-          ref={ctxRef}
-          initial={{ opacity: 0, scale: 0.95, y: -4 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.1 }}
-          style={{ top: codeCtx.y, left: codeCtx.x }}
-          className="fixed z-[9999] min-w-[180px] rounded-xl border border-white/10 backdrop-blur-xl bg-black/80 shadow-2xl overflow-hidden py-1"
-        >
-          <button
-            onClick={() => { onSummarize(codeCtx.code); setCodeCtx(null); onClose(); }}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 transition-colors cursor-default"
+        <>
+          <div className="fixed inset-0 z-[9998] backdrop-blur-sm bg-black/25" />
+          <motion.div
+            ref={ctxRef}
+            initial={{ opacity: 0, scale: 0.95, y: -4 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.1 }}
+            style={{ top: codeCtx.y, left: codeCtx.x }}
+            className="fixed z-[9999] min-w-[180px] rounded-xl border border-white/10 bg-black/90 shadow-2xl overflow-hidden py-1"
           >
-            <Sparkles size={13} className="shrink-0 opacity-55" />
-            Summarize this code
-          </button>
-          <button
-            onClick={() => { navigator.clipboard.writeText(codeCtx.code); setCodeCtx(null); }}
-            className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 transition-colors cursor-default"
-          >
-            <Copy size={13} className="shrink-0 opacity-55" />
-            Copy code
-          </button>
-        </motion.div>,
+            <button
+              onClick={() => { onSummarize(codeCtx.code); setCodeCtx(null); onClose(); }}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 transition-colors cursor-default"
+            >
+              <Sparkles size={13} className="shrink-0 opacity-55" />
+              Summarize this code
+            </button>
+            <button
+              onClick={() => { navigator.clipboard.writeText(codeCtx.code); setCodeCtx(null); }}
+              className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/65 hover:text-white hover:bg-white/10 transition-colors cursor-default"
+            >
+              <Copy size={13} className="shrink-0 opacity-55" />
+              Copy code
+            </button>
+          </motion.div>
+        </>,
         document.body
       )}
     </motion.div>
@@ -459,7 +465,7 @@ function MsgBubble({ msg, onCtx, artifacts, onOpenArtifact, onSummarize }) {
       </div>
 
       {/* Thinking */}
-      {!isUser && (msg.streaming && msg.inThink
+      {!isUser && (msg.streaming && !msg.content
         ? <ThinkBlock live />
         : <ThinkBlock content={msg.thinking} seconds={msg.thinkTime} />
       )}
@@ -519,13 +525,15 @@ function MsgCtxMenu({ x, y, msg, onClose, onAIAction }) {
   ];
 
   return createPortal(
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, scale: 0.95, y: -4 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      transition={{ duration: 0.1 }}
-      style={{ top: pos.y, left: pos.x }}
-      className="ctx-menu fixed z-[9999] min-w-[200px] rounded-xl border border-white/10 backdrop-blur-xl bg-black/80 shadow-2xl overflow-hidden py-1"
+    <>
+      <div className="fixed inset-0 z-[9998] backdrop-blur-sm bg-black/25" />
+      <motion.div
+        ref={ref}
+        initial={{ opacity: 0, scale: 0.95, y: -4 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.1 }}
+        style={{ top: pos.y, left: pos.x }}
+        className="ctx-menu fixed z-[9999] min-w-[200px] rounded-xl border border-white/10 bg-black/90 shadow-2xl overflow-hidden py-1"
     >
       <div className="px-3 py-1.5 border-b border-white/[0.07]">
         <span className="text-[9px] text-white/25 uppercase tracking-widest font-semibold">
@@ -546,7 +554,8 @@ function MsgCtxMenu({ x, y, msg, onClose, onAIAction }) {
           </button>
         )
       )}
-    </motion.div>,
+      </motion.div>
+    </>,
     document.body
   );
 }
@@ -622,6 +631,7 @@ export default function ChatSidebar() {
   const doSend = useCallback(async (text) => {
     const trimmed = typeof text === 'string' ? text.trim() : input.trim();
     if (!trimmed || busy) return;
+    setOpenArtifactId(null);
 
     const userMsg = { id: `u-${Date.now()}`, role: 'user', content: trimmed, timestamp: Date.now() };
     const aiId = `a-${Date.now() + 1}`;
@@ -640,7 +650,7 @@ export default function ChatSidebar() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: history, page: pathname }),
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -820,46 +830,61 @@ export default function ChatSidebar() {
           </button>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5 chat-scroll">
-          {messages.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="text-center mt-6"
-            >
-              <div className="w-12 h-12 rounded-full bg-black border-[0.5px] border-white/12 flex items-center justify-center mx-auto mb-4">
-                <Flame className="w-5 h-5 text-white/40" />
-              </div>
-              <p className="text-white/25 text-xs leading-relaxed mb-5">
-                Hi! I'm Infernix AI.<br />Ask me anything or pick a suggestion.
-              </p>
-              <div className="space-y-2">
-                {SUGGESTIONS.map(s => (
-                  <button
-                    key={s}
-                    onClick={() => doSend(s)}
-                    className="w-full text-left px-3 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] text-xs text-white/40 hover:text-white/70 hover:border-white/15 hover:bg-white/[0.06] transition-all"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          )}
+        {/* Messages + artifact overlay — overlay is scoped here so sidebar header stays visible */}
+        <div className="flex-1 relative overflow-hidden">
+          <div className="absolute inset-0 overflow-y-auto px-4 py-5 space-y-5 chat-scroll">
+            {messages.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="text-center mt-6"
+              >
+                <div className="w-12 h-12 rounded-full bg-black border-[0.5px] border-white/12 flex items-center justify-center mx-auto mb-4">
+                  <Flame className="w-5 h-5 text-white/40" />
+                </div>
+                <p className="text-white/25 text-xs leading-relaxed mb-5">
+                  Hi! I'm Infernix AI.<br />Ask me anything or pick a suggestion.
+                </p>
+                <div className="space-y-2">
+                  {SUGGESTIONS.map(s => (
+                    <button
+                      key={s}
+                      onClick={() => doSend(s)}
+                      className="w-full text-left px-3 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] text-xs text-white/40 hover:text-white/70 hover:border-white/15 hover:bg-white/[0.06] transition-all"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
-          {messages.map(msg => (
-            <MsgBubble
-              key={msg.id}
-              msg={msg}
-              onCtx={handleCtx}
-              artifacts={artifacts}
-              onOpenArtifact={id => setOpenArtifactId(id)}
-              onSummarize={code => doSend(`Explain and summarize this code:\n\`\`\`\n${code}\n\`\`\``)}
-            />
-          ))}
-          <div ref={bottomRef} />
+            {messages.map(msg => (
+              <MsgBubble
+                key={msg.id}
+                msg={msg}
+                onCtx={handleCtx}
+                artifacts={artifacts}
+                onOpenArtifact={id => setOpenArtifactId(id)}
+                onSummarize={code => doSend(`Explain and summarize this code:\n\`\`\`\n${code}\n\`\`\``)}
+              />
+            ))}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Artifact overlay — slides over the messages area only */}
+          <AnimatePresence>
+            {!!(openArtifactId || streamingArtifact) && (streamingArtifact || artifacts[openArtifactId]) && (
+              <SidebarArtifactView
+                key={openArtifactId || 'streaming'}
+                artifact={streamingArtifact || artifacts[openArtifactId]}
+                isStreaming={!!streamingArtifact}
+                onClose={() => setOpenArtifactId(null)}
+                onSummarize={code => { setOpenArtifactId(null); doSend(`Explain and summarize this code:\n\`\`\`\n${code}\n\`\`\``); }}
+              />
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Input */}
@@ -894,19 +919,6 @@ export default function ChatSidebar() {
             Shift + Enter for new line
           </p>
         </div>
-
-        {/* Artifact overlay */}
-        <AnimatePresence>
-          {!!(openArtifactId || streamingArtifact) && (streamingArtifact || artifacts[openArtifactId]) && (
-            <SidebarArtifactView
-              key={openArtifactId || 'streaming'}
-              artifact={streamingArtifact || artifacts[openArtifactId]}
-              isStreaming={!!streamingArtifact}
-              onClose={() => setOpenArtifactId(null)}
-              onSummarize={code => { setOpenArtifactId(null); doSend(`Explain and summarize this code:\n\`\`\`\n${code}\n\`\`\``); }}
-            />
-          )}
-        </AnimatePresence>
       </motion.aside>
 
       {/* Message context menu */}
