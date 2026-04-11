@@ -207,7 +207,7 @@ async function handler(req, res) {
     let groqRes;
     let usedFallback = false;
     try {
-      const r = await callGroq('deepseek-r1-distill-llama-70b', 3000, apiKeys[0]);
+      const r = await callGroq('deepseek-r1-distill-qwen-32b', 3000, apiKeys[0]);
       if (r.ok) {
         groqRes = r; // success — use deepseek response
       } else {

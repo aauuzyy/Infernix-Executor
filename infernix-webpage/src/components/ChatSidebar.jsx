@@ -358,17 +358,21 @@ function ThinkBlock({ content, seconds, live }) {
 
   return (
     <div className="mb-2.5">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1.5 text-[11px] text-white/25 hover:text-white/45 transition-colors cursor-pointer"
-      >
-        <Brain size={10} className="opacity-50 shrink-0" />
-        <span>Thought for {seconds}s</span>
-        <ChevronDown
-          size={10}
-          className={`transition-transform duration-200 shrink-0 ${open ? '' : '-rotate-90'}`}
-        />
-      </button>
+      {content ? (
+        <button
+          onClick={() => setOpen(v => !v)}
+          className="flex items-center gap-1.5 text-[11px] text-white/25 hover:text-white/45 transition-colors cursor-pointer"
+        >
+          <Brain size={10} className="opacity-50 shrink-0" />
+          <span>Thought for {seconds}s</span>
+          <ChevronDown size={10} className={`transition-transform duration-200 shrink-0 ${open ? '' : '-rotate-90'}`} />
+        </button>
+      ) : (
+        <div className="flex items-center gap-1.5 text-[11px] text-white/20">
+          <Brain size={10} className="opacity-40 shrink-0" />
+          <span>Thought for {seconds}s</span>
+        </div>
+      )}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -669,7 +673,7 @@ export default function ChatSidebar() {
       let think = '', full = raw;
       const thinkMatch = raw.match(/^<think>([\s\S]*?)<\/think>\s*/);
       if (thinkMatch) { think = thinkMatch[1].trim(); full = raw.slice(thinkMatch[0].length); }
-      const thinkTime = think ? Math.max(elapsed, Math.round(think.length / 400)) : 0;
+      const thinkTime = Math.max(elapsed, think ? Math.round(think.length / 400) : 0);
 
       const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
       const unFenced = cleaned

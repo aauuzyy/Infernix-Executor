@@ -267,14 +267,21 @@ function ThinkBlock({ content, seconds, live }) {
   if (!seconds) return null;
   return (
     <div className="mb-3">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 text-white/25 text-xs hover:text-white/45 transition-colors group cursor-pointer"
-      >
-        <Brain size={11} className="text-purple-400/50 group-hover:text-purple-400/70 transition-colors" />
-        <span>Thought for {seconds}s</span>
-        <ChevronDown size={10} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </button>
+      {content ? (
+        <button
+          onClick={() => setOpen(o => !o)}
+          className="flex items-center gap-1.5 text-white/25 text-xs hover:text-white/45 transition-colors group cursor-pointer"
+        >
+          <Brain size={11} className="text-purple-400/50 group-hover:text-purple-400/70 transition-colors" />
+          <span>Thought for {seconds}s</span>
+          <ChevronDown size={10} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        </button>
+      ) : (
+        <div className="flex items-center gap-1.5 text-white/20 text-xs">
+          <Brain size={11} className="text-purple-400/30" />
+          <span>Thought for {seconds}s</span>
+        </div>
+      )}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -422,7 +429,7 @@ export default function Assistant() {
       let think = '', full = raw;
       const thinkMatch = raw.match(/^<think>([\s\S]*?)<\/think>\s*/);
       if (thinkMatch) { think = thinkMatch[1].trim(); full = raw.slice(thinkMatch[0].length); }
-      const thinkTime = think ? Math.max(elapsed, Math.round(think.length / 400)) : 0;
+      const thinkTime = Math.max(elapsed, think ? Math.round(think.length / 400) : 0);
 
       const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
       const unFenced = cleaned
