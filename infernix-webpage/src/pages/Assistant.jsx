@@ -62,7 +62,10 @@ function applyPatch(code, patchContent) {
 }
 
 function toDisplayContent(text) {
+  // Strip code fences that the model sometimes wraps around artifact/patch tags
   let out = text
+    .replace(/```[\w]*\s*(<artifact[\s\S]*?<\/artifact>)\s*```/g, '$1')
+    .replace(/```[\w]*\s*(<artifact-patch[\s\S]*?<\/artifact-patch>)\s*```/g, '$1')
     .replace(new RegExp(ARTIFACT_SRC, 'g'), (_, id) => `\n[ARTIFACT:${id}]\n`)
     .replace(new RegExp(PATCH_SRC, 'g'), (_, id) => `\n[ARTIFACT:${id}]\n`);
   return out;
@@ -419,11 +422,14 @@ export default function Assistant() {
       let think = '', full = raw;
       const thinkMatch = raw.match(/^<think>([\s\S]*?)<\/think>\s*/);
       if (thinkMatch) { think = thinkMatch[1].trim(); full = raw.slice(thinkMatch[0].length); }
-      const thinkTime = think ? Math.max(elapsed, Math.round(think.length / 400)) : elapsed;
+      const thinkTime = think ? Math.max(elapsed, Math.round(think.length / 400)) : 0;
 
       const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
-      const newArtifacts = extractArtifacts(cleaned);
-      const patches = extractPatches(cleaned);
+      const unFenced = cleaned
+        .replace(/```[\w]*\s*(<artifact[\s\S]*?<\/artifact>)\s*```/g, '$1')
+        .replace(/```[\w]*\s*(<artifact-patch[\s\S]*?<\/artifact-patch>)\s*```/g, '$1');
+      const newArtifacts = extractArtifacts(unFenced);
+      const patches = extractPatches(unFenced);
 
       if (patches.length > 0) {
         // Patch mode — apply diffs to existing code, animate only replacement
@@ -466,9 +472,9 @@ export default function Assistant() {
           setPatchedArtifactId(patch.id);
           setTimeout(() => setPatchedArtifactId(null), 2500);
         }
-        const displayContent = toDisplayContent(cleaned);
+        const displayContent = toDisplayContent(unFenced);
         setMessages(prev => prev.map(m => m.id === aiId
-          ? { ...m, content: displayContent, rawContent: cleaned, thinking: think, thinkTime, streaming: false, generatingArtifact: false }
+          ? { ...m, content: displayContent, rawContent: unFenced, thinking: think, thinkTime, streaming: false, generatingArtifact: false }
           : m
         ));
       } else if (Object.keys(newArtifacts).length > 0) {
@@ -491,20 +497,20 @@ export default function Assistant() {
           setArtifacts(prev => ({ ...prev, [art.id]: art }));
         }
         setStreamingArtifact(null);
-        const displayContent = toDisplayContent(cleaned);
+        const displayContent = toDisplayContent(unFenced);
         setMessages(prev => prev.map(m => m.id === aiId
-          ? { ...m, content: displayContent, rawContent: cleaned, thinking: think, thinkTime, streaming: false, generatingArtifact: false }
+          ? { ...m, content: displayContent, rawContent: unFenced, thinking: think, thinkTime, streaming: false, generatingArtifact: false }
           : m
         ));
       } else {
         let revealed = '';
-        for (let i = 0; i < cleaned.length; i++) {
-          revealed += cleaned[i];
+        for (let i = 0; i < unFenced.length; i++) {
+          revealed += unFenced[i];
           const snap = revealed;
           setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: snap, thinking: think, thinkTime, streaming: true } : m));
           await new Promise(r => setTimeout(r, 8));
         }
-        setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: cleaned, thinking: think, thinkTime, streaming: false } : m));
+        setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: unFenced, thinking: think, thinkTime, streaming: false } : m));
       }
       if (hasClear) setTimeout(() => {
         if (afterMsg) afterClearRef.current = afterMsg;
