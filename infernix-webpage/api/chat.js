@@ -207,14 +207,14 @@ async function handler(req, res) {
     let groqRes;
     let usedFallback = false;
     try {
-      groqRes = await callGroq('deepseek-r1-distill-llama-70b', 3000, apiKeys[0]);
-      if (groqRes.status === 429 || groqRes.status === 503) {
-        groqRes = null;
-        usedFallback = true;
+      const r = await callGroq('deepseek-r1-distill-llama-70b', 3000, apiKeys[0]);
+      if (r.ok) {
+        groqRes = r; // success — use deepseek response
+      } else {
+        usedFallback = true; // any error (400, 429, 503, etc.) → fall back
       }
     } catch {
-      groqRes = null;
-      usedFallback = true;
+      usedFallback = true; // timeout or network error
     }
 
     if (usedFallback || !groqRes) {
