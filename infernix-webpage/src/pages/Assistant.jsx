@@ -7,6 +7,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { Send, Flame, Brain, ChevronDown, ChevronRight, RotateCcw, User, Copy, Check, X, Code2 } from 'lucide-react';
 
 const STORAGE_KEY = 'infernix-assistant-v1';
+const ARTIFACT_KEY = 'infernix-assistant-artifacts-v1';
 const NAV_RE = /\[NAV:(\/[^\]]*)\]/g;
 
 function stripNav(text) {
@@ -110,13 +111,45 @@ function ArtifactCard({ artifact, onClick }) {
   );
 }
 
-function ArtifactPanel({ artifact, onClose }) {
+const THINKING_WORDS = ['Reviewing...', 'Analyzing...', 'Considering...', 'Planning...', 'Crafting...', 'Thinking...'];
+function ThinkingWords() {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % THINKING_WORDS.length), 1400);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="flex items-center gap-2">
+      <Brain size={11} className="text-white/20 shrink-0" />
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={idx}
+          initial={{ opacity: 0, y: 3 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -3 }}
+          transition={{ duration: 0.18 }}
+          className="text-white/25 text-xs"
+        >
+          {THINKING_WORDS[idx]}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function ArtifactPanel({ artifact, isStreaming, onClose }) {
   const [copied, setCopied] = useState(false);
+  const codeRef = useRef(null);
   const copy = useCallback(() => {
     navigator.clipboard.writeText(artifact.code);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   }, [artifact.code]);
+  useEffect(() => {
+    if (isStreaming && codeRef.current) {
+      codeRef.current.scrollTop = codeRef.current.scrollHeight;
+    }
+  }, [artifact.code, isStreaming]);
   return (
     <motion.div
       initial={{ x: '100%' }}
@@ -132,26 +165,36 @@ function ArtifactPanel({ artifact, onClose }) {
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-white/70 truncate">{artifact.title}</p>
-          <p className="text-[11px] text-white/25">{artifact.language}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <p className="text-[11px] text-white/25">{artifact.language}</p>
+            {isStreaming && (
+              <span className="flex items-center gap-1 text-[10px] text-white/20">
+                <span className="w-1 h-1 rounded-full bg-emerald-400/60 animate-pulse" />
+                generating
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={copy} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-all">
-            {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
+          {!isStreaming && (
+            <button onClick={copy} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-all">
+              {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+          )}
           <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/20 hover:text-white/55 hover:bg-white/[0.05] transition-all">
             <X size={14} />
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-auto">
+      <div ref={codeRef} className="flex-1 overflow-auto">
         <SyntaxHighlighter
           language={artifact.language}
           style={codeTheme}
           customStyle={{ margin: 0, padding: '20px', background: 'transparent' }}
           codeTagProps={{ style: { fontFamily: '"JetBrains Mono","Fira Code",monospace' } }}
         >
-          {artifact.code}
+          {artifact.code || ' '}
         </SyntaxHighlighter>
       </div>
     </motion.div>
@@ -219,8 +262,11 @@ export default function Assistant() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [clearing, setClearing] = useState(false);
-  const [artifacts, setArtifacts] = useState({});
+  const [artifacts, setArtifacts] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(ARTIFACT_KEY)) || {}; } catch { return {}; }
+  });
   const [openArtifactId, setOpenArtifactId] = useState(null);
+  const [streamingArtifact, setStreamingArtifact] = useState(null);
   const bottomRef = useRef(null);
   const textRef = useRef(null);
 
@@ -268,6 +314,10 @@ export default function Assistant() {
   }, [messages]);
 
   useEffect(() => {
+    localStorage.setItem(ARTIFACT_KEY, JSON.stringify(artifacts));
+  }, [artifacts]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -281,8 +331,12 @@ export default function Assistant() {
 
   const clearChat = useCallback(() => {
     setMessages([]);
+    setArtifacts({});
+    setOpenArtifactId(null);
+    setStreamingArtifact(null);
     setBusy(false);
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(ARTIFACT_KEY);
     setClearing(true);
     setTimeout(() => setClearing(false), 750);
   }, []);
@@ -323,10 +377,28 @@ export default function Assistant() {
       const { path, text: cleaned } = stripNav(full);
       const newArtifacts = extractArtifacts(cleaned);
       if (Object.keys(newArtifacts).length > 0) {
-        setArtifacts(prev => ({ ...prev, ...newArtifacts }));
+        // Show thinking state while animating artifact
+        setMessages(prev => prev.map(m => m.id === aiId
+          ? { ...m, content: '', thinking: think, thinkTime, streaming: true, generatingArtifact: true }
+          : m
+        ));
+        // Animate each artifact's code char by char in the panel
+        for (const art of Object.values(newArtifacts)) {
+          setStreamingArtifact({ ...art, code: '' });
+          setOpenArtifactId(art.id);
+          let revealedCode = '';
+          for (let i = 0; i < art.code.length; i++) {
+            revealedCode += art.code[i];
+            const snap = revealedCode;
+            setStreamingArtifact(s => s ? { ...s, code: snap } : null);
+            await new Promise(r => setTimeout(r, 3));
+          }
+          setArtifacts(prev => ({ ...prev, [art.id]: art }));
+        }
+        setStreamingArtifact(null);
         const displayContent = toDisplayContent(cleaned);
         setMessages(prev => prev.map(m => m.id === aiId
-          ? { ...m, content: displayContent, rawContent: cleaned, thinking: think, thinkTime, streaming: false }
+          ? { ...m, content: displayContent, rawContent: cleaned, thinking: think, thinkTime, streaming: false, generatingArtifact: false }
           : m
         ));
       } else {
@@ -429,9 +501,12 @@ export default function Assistant() {
                       </div>
                     ) : (
                       <div className="text-white/80 text-sm leading-relaxed min-w-0 w-full">
-                        {isEmptyStream ? <TypingDots /> : (
-                          <ReactMarkdown components={mdComponents}>{msg.content || ''}</ReactMarkdown>
-                        )}
+                        {msg.generatingArtifact && msg.streaming
+                          ? <ThinkingWords />
+                          : isEmptyStream
+                            ? <TypingDots />
+                            : <ReactMarkdown components={mdComponents}>{msg.content || ''}</ReactMarkdown>
+                        }
                       </div>
                     )}
                   </div>
@@ -480,10 +555,11 @@ export default function Assistant() {
         </div>
       </div>      {createPortal(
         <AnimatePresence>
-          {openArtifactId && artifacts[openArtifactId] && (
+          {openArtifactId && (streamingArtifact || artifacts[openArtifactId]) && (
             <ArtifactPanel
-              artifact={artifacts[openArtifactId]}
-              onClose={() => setOpenArtifactId(null)}
+              artifact={streamingArtifact?.id === openArtifactId ? streamingArtifact : artifacts[openArtifactId]}
+              isStreaming={!!streamingArtifact && streamingArtifact.id === openArtifactId}
+              onClose={() => { setOpenArtifactId(null); setStreamingArtifact(null); }}
             />
           )}
         </AnimatePresence>,
