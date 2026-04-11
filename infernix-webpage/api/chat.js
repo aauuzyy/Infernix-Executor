@@ -104,7 +104,8 @@ async function handler(req, res) {
     const pageCtx = page && PAGE_LABELS[page]
       ? `\n\nContext: The user is currently viewing the ${PAGE_LABELS[page]} page of the Infernix website.`
       : '';
-    const systemContent = SYSTEM + pageCtx;
+    const dateCtx = `\n\nCurrent date and time: ${new Date().toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'full', timeStyle: 'short' })} UTC`;
+    const systemContent = SYSTEM + pageCtx + dateCtx;
 
     const apiKey = (process.env.GROQ_API_KEY || '').trim();
     if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not set' });

@@ -183,7 +183,7 @@ function ArtifactPanel({ artifact, isStreaming, justPatched, onClose }) {
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className="fixed top-16 right-0 bottom-0 w-[480px] z-40 flex flex-col border-l border-white/[0.07]"
+      className="fixed top-0 right-0 bottom-0 w-[480px] z-[100] flex flex-col border-l border-white/[0.07]"
       style={{ background: '#080808', backdropFilter: 'blur(24px)' }}
     >
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] shrink-0">
@@ -261,16 +261,16 @@ function ThinkBlock({ content, seconds, live }) {
       <span>Thinking...</span>
     </div>
   );
-  if (!content || !seconds) return null;
+  if (!seconds) return null;
   return (
     <div className="mb-3">
       <button
-        onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 text-white/25 text-xs hover:text-white/45 transition-colors group"
+        onClick={content ? () => setOpen(o => !o) : undefined}
+        className={`flex items-center gap-1.5 text-white/25 text-xs transition-colors group ${content ? 'hover:text-white/45 cursor-pointer' : 'cursor-default'}`}
       >
         <Brain size={11} className="text-purple-400/50 group-hover:text-purple-400/70 transition-colors" />
         <span>Thought for {seconds}s</span>
-        <ChevronDown size={10} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+        {content && <ChevronDown size={10} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />}
       </button>
       <AnimatePresence>
         {open && (
@@ -398,6 +398,7 @@ export default function Assistant() {
       .concat(userMsg)
       .map(m => ({ role: m.role, content: m.rawContent || m.content }));
 
+    const reqStart = Date.now();
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -408,11 +409,12 @@ export default function Assistant() {
 
       const data = await res.json();
       const raw = data.content ?? '';
+      const elapsed = Math.max(1, Math.round((Date.now() - reqStart) / 1000));
 
       let think = '', full = raw;
       const thinkMatch = raw.match(/^<think>([\s\S]*?)<\/think>\s*/);
       if (thinkMatch) { think = thinkMatch[1].trim(); full = raw.slice(thinkMatch[0].length); }
-      const thinkTime = think ? Math.max(1, Math.round(think.length / 400)) : 0;
+      const thinkTime = think ? Math.max(elapsed, Math.round(think.length / 400)) : elapsed;
 
       const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
       const newArtifacts = extractArtifacts(cleaned);

@@ -223,7 +223,7 @@ function SidebarArtifactView({ artifact, isStreaming, onClose, onSummarize }) {
       animate={{ x: 0 }}
       exit={{ x: '100%' }}
       transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute inset-0 z-10 flex flex-col"
+      className="fixed top-0 right-0 bottom-0 w-80 z-[100] flex flex-col border-l border-white/[0.07]"
       style={{ background: '#080808' }}
     >
       {/* Header */}
@@ -352,20 +352,20 @@ function ThinkBlock({ content, seconds, live }) {
     );
   }
 
-  if (!content || !seconds) return null;
+  if (!seconds) return null;
 
   return (
     <div className="mb-2.5">
       <button
-        onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1.5 text-[11px] text-white/25 hover:text-white/45 transition-colors"
+        onClick={content ? () => setOpen(v => !v) : undefined}
+        className={`flex items-center gap-1.5 text-[11px] text-white/25 transition-colors ${content ? 'hover:text-white/45 cursor-pointer' : 'cursor-default'}`}
       >
         <Brain size={10} className="opacity-50 shrink-0" />
         <span>Thought for {seconds}s</span>
-        <ChevronDown
+        {content && <ChevronDown
           size={10}
           className={`transition-transform duration-200 shrink-0 ${open ? '' : '-rotate-90'}`}
-        />
+        />}
       </button>
       <AnimatePresence>
         {open && (
@@ -646,6 +646,7 @@ export default function ChatSidebar() {
       .concat(userMsg)
       .map(m => ({ role: m.role, content: m.rawContent || m.content }));
 
+    const reqStart = Date.now();
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -657,11 +658,12 @@ export default function ChatSidebar() {
 
       const data = await res.json();
       const raw = data.content ?? '';
+      const elapsed = Math.max(1, Math.round((Date.now() - reqStart) / 1000));
 
       let think = '', full = raw;
       const thinkMatch = raw.match(/^<think>([\s\S]*?)<\/think>\s*/);
       if (thinkMatch) { think = thinkMatch[1].trim(); full = raw.slice(thinkMatch[0].length); }
-      const thinkTime = think ? Math.max(1, Math.round(think.length / 400)) : 0;
+      const thinkTime = think ? Math.max(elapsed, Math.round(think.length / 400)) : elapsed;
 
       const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
       const newArtifacts = extractArtifacts(cleaned);
