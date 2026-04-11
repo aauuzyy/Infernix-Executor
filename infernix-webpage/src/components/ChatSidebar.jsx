@@ -654,7 +654,10 @@ export default function ChatSidebar() {
         body: JSON.stringify({ messages: history, page: pathname }),
       });
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
 
       const data = await res.json();
       const raw = data.content ?? '';
@@ -755,9 +758,10 @@ export default function ChatSidebar() {
       if (path) setTimeout(() => navigate(path), 700);
 
     } catch (err) {
+      const msg = err?.message || 'Sorry, something went wrong. Please try again.';
       setMessages(prev => prev.map(m =>
         m.id === aiId
-          ? { ...m, content: 'Sorry, something went wrong. Please try again.', streaming: false }
+          ? { ...m, content: msg, streaming: false }
           : m
       ));
     }

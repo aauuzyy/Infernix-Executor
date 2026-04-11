@@ -107,18 +107,22 @@ async function handler(req, res) {
     const dateCtx = `\n\nCurrent date and time: ${new Date().toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'full', timeStyle: 'short' })} UTC`;
     const systemContent = SYSTEM + pageCtx + dateCtx;
 
-    const apiKey = (process.env.GROQ_API_KEY || '').trim();
-    if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not set' });
+    const apiKeys = [
+      process.env.GROQ_API_KEY,
+      process.env.GROQ_API_KEY_2,
+      process.env.GROQ_API_KEY_3,
+    ].map(k => (k || '').trim()).filter(Boolean);
+    if (!apiKeys.length) return res.status(500).json({ error: 'No GROQ API keys set' });
 
     const groqMessages = [{ role: 'system', content: systemContent }, ...messages];
 
-    async function callGroq(model, timeoutMs) {
+    async function callGroq(model, timeoutMs, key) {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
         const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ model, messages: groqMessages, stream: false, temperature: 0.6, max_tokens: 2048 }),
           signal: controller.signal,
         });
@@ -130,37 +134,45 @@ async function handler(req, res) {
       }
     }
 
-    // Try deepseek (with think content) — 8s window
-    // On timeout or rate-limit, fall back to llama-3.3-70b-versatile
+    // Try deepseek first (produces <think> content), rotate keys on 429/503/timeout
     let groqRes;
     let usedFallback = false;
-    try {
-      groqRes = await callGroq('deepseek-r1-distill-llama-70b', 8000);
-      if (groqRes.status === 429 || groqRes.status === 503) {
-        usedFallback = true;
+    for (const key of apiKeys) {
+      try {
+        groqRes = await callGroq('deepseek-r1-distill-llama-70b', 8000, key);
+        if (groqRes.status !== 429 && groqRes.status !== 503) break; // this key worked
+        groqRes = null; // rate-limited, try next key
+      } catch {
+        groqRes = null; // timeout, try next key
       }
-    } catch {
-      usedFallback = true;
     }
+    if (!groqRes) usedFallback = true;
 
     if (usedFallback) {
-      // Retry with fast fallback model — up to 2 attempts
+      // All keys rate-limited on deepseek — try llama fallback, rotating keys
       let lastErr;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        if (attempt > 0) await new Promise(r => setTimeout(r, 800));
+      for (const key of apiKeys) {
         try {
-          groqRes = await callGroq('llama-3.3-70b-versatile', 25000);
+          groqRes = await callGroq('llama-3.3-70b-versatile', 25000, key);
           if (groqRes.ok || groqRes.status !== 429) break;
+          groqRes = null;
         } catch (e) {
           lastErr = e;
+          groqRes = null;
         }
       }
       if (!groqRes && lastErr) throw lastErr;
     }
 
-    if (!groqRes.ok) {
-      const errText = await groqRes.text();
-      return res.status(502).json({ error: errText });
+    if (!groqRes || !groqRes.ok) {
+      const errText = groqRes ? await groqRes.text() : 'No response from any key';
+      const status = groqRes?.status ?? 502;
+      console.error(`[chat api] Groq error ${status}:`, errText);
+      // Surface a clean message — don't expose raw Groq internals
+      const friendly = status === 429
+        ? 'The AI is busy right now. Please try again in a few seconds.'
+        : 'Failed to get a response from the AI. Please try again.';
+      return res.status(502).json({ error: friendly, detail: errText });
     }
 
     const data = await groqRes.json();

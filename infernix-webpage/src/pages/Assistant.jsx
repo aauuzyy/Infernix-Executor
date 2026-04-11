@@ -405,7 +405,10 @@ export default function Assistant() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: history }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
 
       const data = await res.json();
       const raw = data.content ?? '';
@@ -512,8 +515,9 @@ export default function Assistant() {
         localStorage.removeItem(ARTIFACT_KEY);
       }, 900);
       if (path) setTimeout(() => navigate(path), 700);
-    } catch {
-      setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: 'Sorry, something went wrong. Please try again.', streaming: false } : m));
+    } catch (err) {
+      const msg = err?.message || 'Sorry, something went wrong. Please try again.';
+      setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: msg, streaming: false } : m));
     }
 
     setBusy(false);
