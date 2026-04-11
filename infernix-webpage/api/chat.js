@@ -145,7 +145,8 @@ async function handler(req, res) {
     const pageCtx = page && PAGE_LABELS[page]
       ? `\n\nContext: The user is currently viewing the ${PAGE_LABELS[page]} page of the Infernix website.`
       : '';
-    const userTz = tz && Intl.supportedValuesOf ? (() => { try { Intl.DateTimeFormat(undefined, { timeZone: tz }); return tz; } catch { return 'UTC'; } })() : 'UTC';
+    let userTz = 'UTC';
+    if (tz) { try { Intl.DateTimeFormat(undefined, { timeZone: tz }); userTz = tz; } catch {} }
     const dateCtx = `\n\nCurrent date and time: ${new Date().toLocaleString('en-US', { timeZone: userTz, dateStyle: 'full', timeStyle: 'short' })} (${userTz})`;
 
     // Web search for queries that likely need live/current info
