@@ -427,15 +427,27 @@ export default function Assistant() {
           let diffStart = 0;
           while (diffStart < existing.code.length && diffStart < patched.length && existing.code[diffStart] === patched[diffStart]) diffStart++;
           // Show existing code up to diff point instantly, then stream the rest
+          // Also compute unchanged suffix from the end
+          let oldTail = existing.code.length - 1;
+          let newTail = patched.length - 1;
+          while (newTail > diffStart && oldTail >= 0 && existing.code[oldTail] === patched[newTail]) {
+            oldTail--;
+            newTail--;
+          }
           const prefix = patched.slice(0, diffStart);
+          const changedSection = patched.slice(diffStart, newTail + 1);
+          const suffix = patched.slice(newTail + 1);
+          // Show prefix instantly, stream only the changed chunk, then show suffix instantly
           setStreamingArtifact({ ...existing, code: prefix });
           let revealed = prefix;
-          for (let i = diffStart; i < patched.length; i++) {
-            revealed += patched[i];
+          for (let i = 0; i < changedSection.length; i++) {
+            revealed += changedSection[i];
             const snap = revealed;
             setStreamingArtifact(s => s ? { ...s, code: snap } : null);
             await new Promise(r => setTimeout(r, 4));
           }
+          setStreamingArtifact(s => s ? { ...s, code: revealed + suffix } : null);
+          await new Promise(r => setTimeout(r, 80));
           const updated = { ...existing, code: patched };
           setArtifacts(prev => ({ ...prev, [patch.id]: updated }));
           setStreamingArtifact(null);
