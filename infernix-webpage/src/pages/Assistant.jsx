@@ -669,7 +669,7 @@ export default function Assistant() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.1 }}
-            className="fixed z-[9999] bg-[rgba(12,12,12,0.96)] border border-white/[0.09] rounded-xl shadow-2xl py-1.5 min-w-[180px]"
+            className="fixed z-[9999] bg-black/60 backdrop-blur-xl border border-white/[0.09] rounded-xl shadow-2xl py-1.5 min-w-[180px]"
             style={{ top: msgCtx.y, left: msgCtx.x }}
           >
             <div className="px-3 py-1.5 mb-1 border-b border-white/[0.06]">

@@ -79,7 +79,7 @@ export default function ContextMenu() {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.1, ease: 'easeOut' }}
             style={{ top: menu.y, left: menu.x }}
-            className="ctx-menu fixed z-[9999] min-w-[210px] rounded-lg border border-white/10 shadow-xl shadow-black/60 overflow-hidden py-1"
+            className="ctx-menu fixed z-[9999] min-w-[210px] rounded-lg border border-white/10 shadow-xl shadow-black/60 overflow-hidden py-1 bg-black/60 backdrop-blur-xl"
           >
             <div className="px-3 py-1.5 border-b border-white/[0.07]">
               <span className="text-[9px] text-white/25 uppercase tracking-widest font-semibold">Page</span>

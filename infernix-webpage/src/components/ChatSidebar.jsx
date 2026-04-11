@@ -540,7 +540,7 @@ function MsgCtxMenu({ x, y, msg, onClose, onAIAction }) {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.1 }}
         style={{ top: pos.y, left: pos.x }}
-        className="ctx-menu fixed z-[9999] min-w-[200px] rounded-xl border border-white/10 bg-black/90 shadow-2xl overflow-hidden py-1"
+        className="ctx-menu fixed z-[9999] min-w-[200px] rounded-xl border border-white/10 bg-black/60 backdrop-blur-xl shadow-2xl overflow-hidden py-1"
     >
       <div className="px-3 py-1.5 border-b border-white/[0.07]">
         <span className="text-[9px] text-white/25 uppercase tracking-widest font-semibold">
