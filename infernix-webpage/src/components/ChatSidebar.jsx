@@ -533,7 +533,7 @@ function MsgCtxMenu({ x, y, msg, onClose, onAIAction }) {
 
   return createPortal(
     <>
-      <div className="fixed inset-0 z-[9998] backdrop-blur-sm bg-black/25" />
+      <div className="fixed inset-0 z-[9998] bg-black/20" onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }} />
       <motion.div
         ref={ref}
         initial={{ opacity: 0, scale: 0.95, y: -4 }}

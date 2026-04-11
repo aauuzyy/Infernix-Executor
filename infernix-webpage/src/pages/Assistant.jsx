@@ -613,7 +613,7 @@ export default function Assistant() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.22 }}
-                  onContextMenu={msg.streaming ? undefined : e => { e.preventDefault(); setMsgCtx({ x: e.clientX, y: e.clientY, msgId: msg.id }); }}
+                  onContextMenu={msg.streaming ? undefined : e => { e.preventDefault(); e.stopPropagation(); setMsgCtx({ x: e.clientX, y: e.clientY, msgId: msg.id }); }}
                   className={`flex gap-3.5 ${isUser ? 'flex-row-reverse' : ''}`}
                 >
                   <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center mt-0.5 ${
@@ -663,7 +663,7 @@ export default function Assistant() {
       {/* Message context menu */}
       {msgCtx && createPortal(
         <>
-          <div className="fixed inset-0 z-[9998] backdrop-blur-sm bg-black/25" onClick={() => setMsgCtx(null)} />
+          <div className="fixed inset-0 z-[9998] bg-black/20" onContextMenu={e => { e.preventDefault(); e.stopPropagation(); }} onClick={() => setMsgCtx(null)} />
           <motion.div
             ref={msgCtxRef}
             initial={{ opacity: 0, scale: 0.95 }}

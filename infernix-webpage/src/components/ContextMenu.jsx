@@ -69,31 +69,37 @@ export default function ContextMenu() {
   return createPortal(
     <AnimatePresence>
       {menu && (
-        <motion.div
-          ref={menuRef}
-          key="ctx"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.1, ease: 'easeOut' }}
-          style={{ top: menu.y, left: menu.x }}
-          className="ctx-menu fixed z-[9999] min-w-[210px] rounded-lg border border-white/10 shadow-xl shadow-black/60 overflow-hidden py-1"
-        >
-          {ITEMS.map((item, i) =>
-            item === null ? (
-              <div key={i} className="my-1 border-t border-white/10" />
-            ) : (
-              <button
-                key={item.label}
-                onClick={() => { item.action(); close(); }}
-                className="w-full flex items-center gap-3 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-100 cursor-default"
-              >
-                <item.icon size={13} className="shrink-0 opacity-60" />
-                {item.label}
-              </button>
-            )
-          )}
-        </motion.div>
+        <>
+          <div className="fixed inset-0 z-[9998] bg-black/20" onContextMenu={e => e.preventDefault()} />
+          <motion.div
+            ref={menuRef}
+            key="ctx"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.1, ease: 'easeOut' }}
+            style={{ top: menu.y, left: menu.x }}
+            className="ctx-menu fixed z-[9999] min-w-[210px] rounded-lg border border-white/10 shadow-xl shadow-black/60 overflow-hidden py-1"
+          >
+            <div className="px-3 py-1.5 border-b border-white/[0.07]">
+              <span className="text-[9px] text-white/25 uppercase tracking-widest font-semibold">Page</span>
+            </div>
+            {ITEMS.map((item, i) =>
+              item === null ? (
+                <div key={i} className="my-1 border-t border-white/10" />
+              ) : (
+                <button
+                  key={item.label}
+                  onClick={() => { item.action(); close(); }}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 transition-colors duration-100 cursor-default"
+                >
+                  <item.icon size={13} className="shrink-0 opacity-60" />
+                  {item.label}
+                </button>
+              )
+            )}
+          </motion.div>
+        </>
       )}
     </AnimatePresence>,
     document.body
