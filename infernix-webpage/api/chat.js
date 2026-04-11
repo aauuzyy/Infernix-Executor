@@ -110,20 +110,53 @@ async function handler(req, res) {
     const apiKey = (process.env.GROQ_API_KEY || '').trim();
     if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not set' });
 
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'deepseek-r1-distill-llama-70b',
-        messages: [{ role: 'system', content: systemContent }, ...messages],
-        stream: false,
-        temperature: 0.6,
-        max_tokens: 2048,
-      }),
-    });
+    const groqMessages = [{ role: 'system', content: systemContent }, ...messages];
+
+    async function callGroq(model, timeoutMs) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, messages: groqMessages, stream: false, temperature: 0.6, max_tokens: 2048 }),
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+        return r;
+      } catch (e) {
+        clearTimeout(timer);
+        throw e;
+      }
+    }
+
+    // Try deepseek (with think content) — 8s window
+    // On timeout or rate-limit, fall back to llama-3.3-70b-versatile
+    let groqRes;
+    let usedFallback = false;
+    try {
+      groqRes = await callGroq('deepseek-r1-distill-llama-70b', 8000);
+      if (groqRes.status === 429 || groqRes.status === 503) {
+        usedFallback = true;
+      }
+    } catch {
+      usedFallback = true;
+    }
+
+    if (usedFallback) {
+      // Retry with fast fallback model — up to 2 attempts
+      let lastErr;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 800));
+        try {
+          groqRes = await callGroq('llama-3.3-70b-versatile', 25000);
+          if (groqRes.ok || groqRes.status !== 429) break;
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+      if (!groqRes && lastErr) throw lastErr;
+    }
 
     if (!groqRes.ok) {
       const errText = await groqRes.text();
