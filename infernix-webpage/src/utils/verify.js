@@ -15,6 +15,7 @@ export function makeVerifState(attempt = 1, maxAttempts = 3, code = '') {
     code,
     issues: [],
     passed: null,
+    retrying: false,
   };
 }
 
@@ -70,18 +71,16 @@ export async function runVerifyLoop(artifact, setVerif, setArtifacts) {
     if (!verifyResult) break;
 
     const { pass, issues = [], fixedCode = null } = verifyResult;
-    setVerif(prev => prev ? { ...prev, issues, passed: pass } : null);
+    const canRetry = !!fixedCode && attempt < MAX;
+    setVerif(prev => prev ? { ...prev, issues, passed: pass, retrying: canRetry } : null);
 
     if (pass) {
       setTimeout(() => setVerif(null), 2500);
       break;
     }
 
-    // Failed — try to apply fix
-    const canRetry = !!fixedCode && attempt < MAX;
     if (!canRetry) {
       if (fixedCode) {
-        // Apply fix even on last attempt
         setArtifacts(prev => ({ ...prev, [artifact.id]: { ...artifact, code: fixedCode } }));
       }
       setTimeout(() => setVerif(null), 6000);

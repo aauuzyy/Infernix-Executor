@@ -1031,6 +1031,7 @@ export default function ChatSidebar() {
               maxAttempts={verif.maxAttempts}
               issues={verif.issues}
               passed={verif.passed}
+              retrying={verif.retrying}
               code={verif.code}
               rightOffset={336}
             />

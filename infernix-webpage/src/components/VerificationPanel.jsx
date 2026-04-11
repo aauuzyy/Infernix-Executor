@@ -47,6 +47,7 @@ export default function VerificationPanel({
   maxAttempts = 3,
   issues = [],
   passed = null,
+  retrying = false,
   code = '',
   rightOffset = 16,
 }) {
@@ -88,8 +89,8 @@ export default function VerificationPanel({
 
   const doneCount = steps.filter(s => s.status === 'done' || s.status === 'fail').length;
   const progress = steps.length > 0 ? doneCount / steps.length : 0;
-  const finalFail = passed === false && (issues.length === 0 || attempt >= maxAttempts);
-  const retrying  = passed === false && issues.length > 0 && attempt < maxAttempts;
+  const finalFail = passed === false && !retrying;
+  const hasIssuesNoFix = finalFail && issues.length > 0 && attempt < maxAttempts;
 
   return (
     <motion.div
@@ -278,7 +279,13 @@ export default function VerificationPanel({
             <span className="text-[10px] text-amber-400/50">Applying fixes, re-verifying...</span>
           </div>
         )}
-        {finalFail && (
+        {hasIssuesNoFix && (
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle size={9} className="text-yellow-400/45 shrink-0" />
+            <span className="text-[10px] text-yellow-400/40">Issues found — no auto-fix available</span>
+          </div>
+        )}
+        {finalFail && !hasIssuesNoFix && (
           <div className="flex items-center gap-1.5">
             <X size={9} className="text-red-400/45 shrink-0" />
             <span className="text-[10px] text-red-400/45">

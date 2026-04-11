@@ -827,6 +827,7 @@ export default function Assistant() {
               maxAttempts={verif.maxAttempts}
               issues={verif.issues}
               passed={verif.passed}
+              retrying={verif.retrying}
               code={verif.code}
               rightOffset={openArtifactId ? 496 : 16}
             />
