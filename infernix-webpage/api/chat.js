@@ -165,7 +165,23 @@ async function handler(req, res) {
     ].map(k => (k || '').trim()).filter(Boolean);
     if (!apiKeys.length) return res.status(500).json({ error: 'No GROQ API keys set' });
 
-    const groqMessages = [{ role: 'system', content: systemContent }, ...messages];
+    // Sanitize messages: remove empty content, ensure alternating roles
+    const sanitized = messages
+      .filter(m => m.role === 'user' || m.role === 'assistant')
+      .filter(m => typeof m.content === 'string' && m.content.trim().length > 0)
+      .reduce((acc, m) => {
+        // Merge consecutive same-role messages to satisfy Groq's alternating requirement
+        if (acc.length > 0 && acc[acc.length - 1].role === m.role) {
+          acc[acc.length - 1] = { role: m.role, content: acc[acc.length - 1].content + '\n' + m.content };
+        } else {
+          acc.push({ role: m.role, content: m.content });
+        }
+        return acc;
+      }, []);
+
+    if (!sanitized.length) return res.status(400).json({ error: 'No valid messages' });
+
+    const groqMessages = [{ role: 'system', content: systemContent }, ...sanitized];
 
     async function callGroq(model, timeoutMs, key) {
       const controller = new AbortController();
@@ -220,8 +236,7 @@ async function handler(req, res) {
     if (!groqRes || !groqRes.ok) {
       const errText = groqRes ? await groqRes.text() : 'No response from any key';
       const status = groqRes?.status ?? 502;
-      console.error(`[chat api] Groq error ${status}:`, errText);
-      // Surface a clean message — don't expose raw Groq internals
+      console.error(`[chat api] Groq ${status} — sanitized msg count: ${sanitized.length} — error:`, errText);
       const friendly = status === 429
         ? 'The AI is busy right now. Please try again in a few seconds.'
         : 'Failed to get a response from the AI. Please try again.';
