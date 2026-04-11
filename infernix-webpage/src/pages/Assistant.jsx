@@ -57,11 +57,6 @@ function CodeBlock({ language, children }) {
     <div className="relative rounded-xl overflow-hidden mt-3 mb-3 border border-white/[0.07]" style={{ background: 'rgba(14,14,21,0.95)' }}>
       <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.05]" style={{ background: 'rgba(255,255,255,0.02)' }}>
         <div className="flex items-center gap-3">
-          <div className="flex gap-1.5">
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'rgba(255,95,87,0.4)' }} />
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'rgba(255,188,46,0.4)' }} />
-            <div className="w-2.5 h-2.5 rounded-full" style={{ background: 'rgba(40,201,64,0.4)' }} />
-          </div>
           <span className="text-[11px] text-white/20 font-mono">{lang}</span>
         </div>
         <button onClick={copy} className="flex items-center gap-1.5 text-[11px] text-white/20 hover:text-white/55 transition-colors">
@@ -339,7 +334,7 @@ export default function Assistant() {
       {/* Input */}
       <div className="sticky bottom-0 bg-gradient-to-t from-black via-black/90 to-transparent pt-4 pb-4 px-6">
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-end gap-2.5 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 focus-within:border-white/[0.18] transition-colors">
+          <div className="flex items-end gap-2 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-1.5 focus-within:border-white/[0.18] transition-colors">
             <textarea
               ref={textRef}
               value={input}
