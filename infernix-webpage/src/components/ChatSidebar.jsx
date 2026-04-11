@@ -357,15 +357,15 @@ function ThinkBlock({ content, seconds, live }) {
   return (
     <div className="mb-2.5">
       <button
-        onClick={content ? () => setOpen(v => !v) : undefined}
-        className={`flex items-center gap-1.5 text-[11px] text-white/25 transition-colors ${content ? 'hover:text-white/45 cursor-pointer' : 'cursor-default'}`}
+        onClick={() => setOpen(v => !v)}
+        className="flex items-center gap-1.5 text-[11px] text-white/25 hover:text-white/45 transition-colors cursor-pointer"
       >
         <Brain size={10} className="opacity-50 shrink-0" />
         <span>Thought for {seconds}s</span>
-        {content && <ChevronDown
+        <ChevronDown
           size={10}
           className={`transition-transform duration-200 shrink-0 ${open ? '' : '-rotate-90'}`}
-        />}
+        />
       </button>
       <AnimatePresence>
         {open && (

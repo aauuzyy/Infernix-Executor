@@ -265,12 +265,12 @@ function ThinkBlock({ content, seconds, live }) {
   return (
     <div className="mb-3">
       <button
-        onClick={content ? () => setOpen(o => !o) : undefined}
-        className={`flex items-center gap-1.5 text-white/25 text-xs transition-colors group ${content ? 'hover:text-white/45 cursor-pointer' : 'cursor-default'}`}
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 text-white/25 text-xs hover:text-white/45 transition-colors group cursor-pointer"
       >
         <Brain size={11} className="text-purple-400/50 group-hover:text-purple-400/70 transition-colors" />
         <span>Thought for {seconds}s</span>
-        {content && <ChevronDown size={10} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />}
+        <ChevronDown size={10} className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
       <AnimatePresence>
         {open && (
