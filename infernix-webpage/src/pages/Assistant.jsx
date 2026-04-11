@@ -73,7 +73,7 @@ function CodeBlock({ language, children }) {
     setTimeout(() => setCopied(false), 1800);
   }, [code]);
   return (
-    <div className="relative rounded-xl overflow-hidden mt-3 mb-3 border border-white/[0.07]" style={{ background: 'rgba(14,14,21,0.95)' }}>
+    <div className="relative rounded-xl overflow-hidden mt-3 mb-3 border border-white/[0.07]" style={{ background: '#0a0a0a' }}>
       <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.05]" style={{ background: 'rgba(255,255,255,0.02)' }}>
         <div className="flex items-center gap-3">
           <span className="text-[11px] text-white/20 font-mono">{lang}</span>
@@ -96,7 +96,7 @@ function ArtifactCard({ artifact, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.15] transition-all group mt-2 mb-2"
+      className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border border-white/[0.07] bg-black hover:bg-white/[0.04] hover:border-white/[0.13] transition-all group mt-2 mb-2"
     >
       <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center shrink-0">
         <Code2 size={15} className="text-white/35 group-hover:text-white/60 transition-colors" />
@@ -124,7 +124,7 @@ function ArtifactPanel({ artifact, onClose }) {
       exit={{ x: '100%' }}
       transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
       className="fixed top-16 right-0 bottom-0 w-[480px] z-40 flex flex-col border-l border-white/[0.07]"
-      style={{ background: 'rgba(7,7,11,0.98)', backdropFilter: 'blur(24px)' }}
+      style={{ background: '#080808', backdropFilter: 'blur(24px)' }}
     >
       <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] shrink-0">
         <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center shrink-0">
@@ -241,7 +241,7 @@ export default function Assistant() {
           </div>
         );
       }
-      return <p className="mb-2 last:mb-0 leading-7" {...props} />;
+      return <p className="mb-2 last:mb-0 leading-7" {...props}>{children}</p>;
     },
     ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
     ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
@@ -254,7 +254,7 @@ export default function Assistant() {
       if (!inline && (match || String(children).includes('\n'))) {
         return <CodeBlock language={match?.[1]}>{children}</CodeBlock>;
       }
-      return <code className="bg-white/[0.08] border border-white/[0.06] px-1.5 py-0.5 rounded text-[13px] font-mono text-purple-300" {...props}>{children}</code>;
+      return <code className="bg-white/[0.07] border border-white/[0.05] px-1.5 py-0.5 rounded text-[13px] font-mono text-white/75" {...props}>{children}</code>;
     },
     h1: ({ node, ...props }) => <h1 className="font-bold text-white text-xl mb-3 mt-4" {...props} />,
     h2: ({ node, ...props }) => <h2 className="font-semibold text-white text-lg mb-2 mt-3" {...props} />,
