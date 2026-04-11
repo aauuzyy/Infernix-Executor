@@ -7,11 +7,12 @@ export const VERIFY_STEPS = [
   { id: 'finalize', label: 'Compiling report' },
 ];
 
-export function makeVerifState(attempt = 1, maxAttempts = 3) {
+export function makeVerifState(attempt = 1, maxAttempts = 3, code = '') {
   return {
     steps: VERIFY_STEPS.map(s => ({ ...s, status: 'idle' })),
     attempt,
     maxAttempts,
+    code,
     issues: [],
     passed: null,
   };
@@ -24,7 +25,7 @@ export async function runVerifyLoop(artifact, setVerif, setArtifacts) {
   let code = artifact.code;
 
   for (let attempt = 1; attempt <= MAX; attempt++) {
-    setVerif(makeVerifState(attempt, MAX));
+    setVerif(makeVerifState(attempt, MAX, code));
 
     let verifyResult = null;
     try {
