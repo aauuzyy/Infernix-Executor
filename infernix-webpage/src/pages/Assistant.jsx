@@ -9,11 +9,13 @@ import { Send, Flame, Brain, ChevronDown, ChevronRight, RotateCcw, User, Copy, C
 const STORAGE_KEY = 'infernix-assistant-v1';
 const ARTIFACT_KEY = 'infernix-assistant-artifacts-v1';
 const NAV_RE = /\[NAV:(\/[^\]]*)\]/g;
+const CLEAR_RE = /\[CLEAR\]/;
 
 function stripNav(text) {
   const matches = [...text.matchAll(NAV_RE)];
   const path = matches.length ? matches[matches.length - 1][1] : null;
-  return { path, text: text.replace(NAV_RE, '').trim() };
+  const hasClear = CLEAR_RE.test(text);
+  return { path, hasClear, text: text.replace(NAV_RE, '').replace(/\[CLEAR\]/g, '').trim() };
 }
 
 const SUGGESTIONS = [
@@ -408,7 +410,7 @@ export default function Assistant() {
       if (thinkMatch) { think = thinkMatch[1].trim(); full = raw.slice(thinkMatch[0].length); }
       const thinkTime = think ? Math.max(1, Math.round(think.length / 400)) : 0;
 
-      const { path, text: cleaned } = stripNav(full);
+      const { path, hasClear, text: cleaned } = stripNav(full);
       const newArtifacts = extractArtifacts(cleaned);
       const patches = extractPatches(cleaned);
 
@@ -493,6 +495,15 @@ export default function Assistant() {
         }
         setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: cleaned, thinking: think, thinkTime, streaming: false } : m));
       }
+      if (hasClear) setTimeout(() => {
+        setMessages([]);
+        setArtifacts({});
+        setOpenArtifactId(null);
+        setStreamingArtifact(null);
+        setBusy(false);
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(ARTIFACT_KEY);
+      }, 900);
       if (path) setTimeout(() => navigate(path), 700);
     } catch {
       setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: 'Sorry, something went wrong. Please try again.', streaming: false } : m));

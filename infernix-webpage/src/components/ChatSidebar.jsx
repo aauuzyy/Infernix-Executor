@@ -10,11 +10,13 @@ import {
 
 const STORAGE_KEY = 'infernix-chat-v1';
 const NAV_RE = /\[NAV:(\/[^\]]*)\]/g;
+const CLEAR_RE = /\[CLEAR\]/;
 
 function stripNav(text) {
   const matches = [...text.matchAll(NAV_RE)];
   const path = matches.length ? matches[matches.length - 1][1] : null;
-  return { path, text: text.replace(NAV_RE, '').trim() };
+  const hasClear = CLEAR_RE.test(text);
+  return { path, hasClear, text: text.replace(NAV_RE, '').replace(/\[CLEAR\]/g, '').trim() };
 }
 
 // ── Avatars ───────────────────────────────────────────────────
@@ -346,7 +348,7 @@ export default function ChatSidebar() {
       }
       const thinkTime = think ? Math.max(1, Math.round(think.length / 400)) : 0;
 
-      const { path, text: cleaned } = stripNav(full);
+      const { path, hasClear, text: cleaned } = stripNav(full);
 
       // Typewriter reveal
       let revealed = '';
@@ -365,6 +367,11 @@ export default function ChatSidebar() {
           : m
       ));
 
+      if (hasClear) setTimeout(() => {
+        setMessages([]);
+        setBusy(false);
+        localStorage.removeItem(STORAGE_KEY);
+      }, 900);
       if (path) setTimeout(() => navigate(path), 700);
 
     } catch (err) {
