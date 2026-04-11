@@ -438,15 +438,14 @@ export default function Assistant() {
           const changedSection = patched.slice(diffStart, newTail + 1);
           const suffix = patched.slice(newTail + 1);
           // Show prefix instantly, stream only the changed chunk, then show suffix instantly
-          setStreamingArtifact({ ...existing, code: prefix });
+          setStreamingArtifact({ ...existing, code: prefix + suffix });
           let revealed = prefix;
           for (let i = 0; i < changedSection.length; i++) {
             revealed += changedSection[i];
-            const snap = revealed;
+            const snap = revealed + suffix;
             setStreamingArtifact(s => s ? { ...s, code: snap } : null);
             await new Promise(r => setTimeout(r, 4));
           }
-          setStreamingArtifact(s => s ? { ...s, code: revealed + suffix } : null);
           await new Promise(r => setTimeout(r, 80));
           const updated = { ...existing, code: patched };
           setArtifacts(prev => ({ ...prev, [patch.id]: updated }));
