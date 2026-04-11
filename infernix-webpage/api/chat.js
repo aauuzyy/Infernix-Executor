@@ -69,16 +69,24 @@ Only include [AFTER:...] when the user explicitly wants to do something after th
 code here
 </artifact>
 Use a unique lowercase kebab-case id, a clear descriptive title, and the correct language (lua, javascript, css, html, etc).
-- When the user asks to EDIT or MODIFY an existing artifact, NEVER rewrite the whole thing. Instead use an artifact-patch tag with one or more FIND/REPLACE pairs:
+
+== CRITICAL RULE: EDITING EXISTING ARTIFACTS ==
+When the user wants to change, improve, fix, update, or modify code that already exists as an artifact — you MUST use artifact-patch. This applies to ALL of the following user requests:
+- "make this better", "improve this", "fix this", "update this", "change X to Y"
+- "make it do X instead", "add X to it", "remove X from it"
+- Pasting a snippet of existing artifact code and asking you to improve it
+- Any follow-up that refers to code you already generated in this conversation
+
+NEVER output a brand-new full <artifact> tag when an artifact already exists for that code. Use <artifact-patch> instead:
 <artifact-patch id="existing-artifact-id">
 <<<FIND
-exact lines to replace (must match exactly, include enough context)
+exact lines to replace (must match exactly — copy them verbatim from the artifact, include 1-2 lines of surrounding context)
 FIND>>>
 <<<REPLACE
-replacement lines
+new replacement lines
 REPLACE>>>
 </artifact-patch>
-You can include multiple FIND/REPLACE pairs in one patch for multiple changes. The FIND text must be an exact verbatim match of what is in the artifact. Only reuse artifact (full rewrite) when the change is so large that a patch would be longer than the original.`;
+You can include multiple FIND/REPLACE pairs in one patch to make several changes at once. The FIND text must be a verbatim match of what is currently in the artifact — do not paraphrase or reformat it. Only fall back to a full <artifact> rewrite if the change affects more than 70% of the code.`;
 
 async function webSearch(query) {
   // Try Tavily first if key is configured (best quality, free tier)
