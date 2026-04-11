@@ -761,6 +761,7 @@ export default function ChatSidebar() {
           const existing = artifacts[patch.id];
           if (!existing) continue;
           setOpenArtifactId(patch.id);
+          await new Promise(r => setTimeout(r, 320)); // let panel slide in before animating
           const patched = applyPatch(existing.code, patch.patchContent);
           let diffStart = 0;
           while (diffStart < existing.code.length && diffStart < patched.length && existing.code[diffStart] === patched[diffStart]) diffStart++;
@@ -775,7 +776,7 @@ export default function ChatSidebar() {
             revealed += changedSection[i];
             const snap = revealed + suffix;
             setStreamingArtifact(s => s ? { ...s, code: snap } : null);
-            await new Promise(r => setTimeout(r, 4));
+            await new Promise(r => setTimeout(r, 18));
           }
           await new Promise(r => setTimeout(r, 80));
           const updated = { ...existing, code: patched };

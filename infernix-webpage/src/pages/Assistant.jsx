@@ -519,6 +519,7 @@ export default function Assistant() {
           const existing = artifacts[patch.id];
           if (!existing) continue;
           setOpenArtifactId(patch.id);
+          await new Promise(r => setTimeout(r, 320)); // let panel slide in before animating
           const patched = applyPatch(existing.code, patch.patchContent);
           // Find the first changed char position and stream from there
           let diffStart = 0;
@@ -541,7 +542,7 @@ export default function Assistant() {
             revealed += changedSection[i];
             const snap = revealed + suffix;
             setStreamingArtifact(s => s ? { ...s, code: snap } : null);
-            await new Promise(r => setTimeout(r, 4));
+            await new Promise(r => setTimeout(r, 18));
           }
           await new Promise(r => setTimeout(r, 80));
           const updated = { ...existing, code: patched };
@@ -611,7 +612,7 @@ export default function Assistant() {
     }
 
     setBusy(false);
-  }, [messages, busy, input, navigate]);
+  }, [messages, busy, input, navigate, artifacts]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); doSend(); }
