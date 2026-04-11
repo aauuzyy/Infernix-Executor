@@ -415,7 +415,7 @@ export default function Assistant() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: history, tz: Intl.DateTimeFormat().resolvedOptions().timeZone }),
       });
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));

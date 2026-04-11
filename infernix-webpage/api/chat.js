@@ -128,14 +128,16 @@ async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    let messages, page;
+    let messages, page, tz;
     if (req.body && typeof req.body === 'object') {
       messages = req.body.messages;
       page = req.body.page;
+      tz = req.body.tz;
     } else if (typeof req.body === 'string') {
       const parsed = JSON.parse(req.body);
       messages = parsed.messages;
       page = parsed.page;
+      tz = parsed.tz;
     }
     if (!Array.isArray(messages)) return res.status(400).json({ error: 'Missing messages' });
 
@@ -143,7 +145,8 @@ async function handler(req, res) {
     const pageCtx = page && PAGE_LABELS[page]
       ? `\n\nContext: The user is currently viewing the ${PAGE_LABELS[page]} page of the Infernix website.`
       : '';
-    const dateCtx = `\n\nCurrent date and time: ${new Date().toLocaleString('en-US', { timeZone: 'UTC', dateStyle: 'full', timeStyle: 'short' })} UTC`;
+    const userTz = tz && Intl.supportedValuesOf ? (() => { try { Intl.DateTimeFormat(undefined, { timeZone: tz }); return tz; } catch { return 'UTC'; } })() : 'UTC';
+    const dateCtx = `\n\nCurrent date and time: ${new Date().toLocaleString('en-US', { timeZone: userTz, dateStyle: 'full', timeStyle: 'short' })} (${userTz})`;
 
     // Web search for queries that likely need live/current info
     const lastUserMsg = messages[messages.length - 1]?.content || '';
