@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { Send, Flame, Brain, ChevronDown, RotateCcw, User, Copy, Check } from 'lucide-react';
+import { Send, Flame, Brain, ChevronDown, ChevronRight, RotateCcw, User, Copy, Check, X, Code2 } from 'lucide-react';
 
 const STORAGE_KEY = 'infernix-assistant-v1';
 const NAV_RE = /\[NAV:(\/[^\]]*)\]/g;
@@ -20,6 +21,24 @@ const SUGGESTIONS = [
   'What features does Infernix have?',
   'Who made Infernix?',
 ];
+
+// Artifact parsing
+const ARTIFACT_SRC = '<artifact\\s+id="([^"]+)"\\s+title="([^"]+)"\\s+language="([^"]+)">((?:.|\n)*?)<\/artifact>';
+function extractArtifacts(text) {
+  const found = {};
+  const re = new RegExp(ARTIFACT_SRC, 'g');
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    found[m[1]] = { id: m[1], title: m[2], language: m[3], code: m[4].trim() };
+  }
+  return found;
+}
+function toDisplayContent(text) {
+  let out = text.replace(new RegExp(ARTIFACT_SRC, 'g'), (_, id) => `\n[ARTIFACT:${id}]\n`);
+  out = out.replace(/<artifact\s+id="[^"]+"\s+title="([^"]+)"[^>]*>(?:.|\n)*/g,
+    (_, title) => `\n[ARTIFACT_LOADING:${title}]\n`);
+  return out;
+}
 
 // Custom dark code theme (Catppuccin-inspired)
 const codeTheme = {
@@ -70,6 +89,72 @@ function CodeBlock({ language, children }) {
         </SyntaxHighlighter>
       </div>
     </div>
+  );
+}
+
+function ArtifactCard({ artifact, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/[0.15] transition-all group mt-2 mb-2"
+    >
+      <div className="w-9 h-9 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center shrink-0">
+        <Code2 size={15} className="text-white/35 group-hover:text-white/60 transition-colors" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-white/60 group-hover:text-white/85 transition-colors truncate">{artifact.title}</p>
+        <p className="text-[11px] text-white/25 mt-0.5">{artifact.language} · Interactive artifact</p>
+      </div>
+      <ChevronRight size={14} className="text-white/15 group-hover:text-white/40 transition-colors shrink-0" />
+    </button>
+  );
+}
+
+function ArtifactPanel({ artifact, onClose }) {
+  const [copied, setCopied] = useState(false);
+  const copy = useCallback(() => {
+    navigator.clipboard.writeText(artifact.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  }, [artifact.code]);
+  return (
+    <motion.div
+      initial={{ x: '100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '100%' }}
+      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      className="fixed top-16 right-0 bottom-0 w-[480px] z-40 flex flex-col border-l border-white/[0.07]"
+      style={{ background: 'rgba(7,7,11,0.98)', backdropFilter: 'blur(24px)' }}
+    >
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-white/[0.06] shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.07] flex items-center justify-center shrink-0">
+          <Code2 size={14} className="text-white/40" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-white/70 truncate">{artifact.title}</p>
+          <p className="text-[11px] text-white/25">{artifact.language}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={copy} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-all">
+            {copied ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+            {copied ? 'Copied!' : 'Copy'}
+          </button>
+          <button onClick={onClose} className="w-7 h-7 rounded-lg flex items-center justify-center text-white/20 hover:text-white/55 hover:bg-white/[0.05] transition-all">
+            <X size={14} />
+          </button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-auto">
+        <SyntaxHighlighter
+          language={artifact.language}
+          style={codeTheme}
+          customStyle={{ margin: 0, padding: '20px', background: 'transparent' }}
+          codeTagProps={{ style: { fontFamily: '"JetBrains Mono","Fira Code",monospace' } }}
+        >
+          {artifact.code}
+        </SyntaxHighlighter>
+      </div>
+    </motion.div>
   );
 }
 
@@ -126,28 +211,6 @@ function ThinkBlock({ content, seconds, live }) {
   );
 }
 
-const mdComponents = {
-  p: ({ node, ...props }) => <p className="mb-2 last:mb-0 leading-7" {...props} />,
-  ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
-  ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
-  li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
-  strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
-  em: ({ node, ...props }) => <em className="italic text-white/80" {...props} />,
-  pre: ({ node, children }) => <>{children}</>,
-  code: ({ node, inline, className, children, ...props }) => {
-    const match = /language-(\w+)/.exec(className || '');
-    if (!inline && (match || String(children).includes('\n'))) {
-      return <CodeBlock language={match?.[1]}>{children}</CodeBlock>;
-    }
-    return <code className="bg-white/[0.08] border border-white/[0.06] px-1.5 py-0.5 rounded text-[13px] font-mono text-purple-300" {...props}>{children}</code>;
-  },
-  h1: ({ node, ...props }) => <h1 className="font-bold text-white text-xl mb-3 mt-4" {...props} />,
-  h2: ({ node, ...props }) => <h2 className="font-semibold text-white text-lg mb-2 mt-3" {...props} />,
-  h3: ({ node, ...props }) => <h3 className="font-medium text-white/90 mb-2 mt-2" {...props} />,
-  a: ({ node, ...props }) => <a className="text-blue-400 underline hover:text-blue-300 transition-colors" target="_blank" rel="noopener noreferrer" {...props} />,
-  blockquote: ({ node, ...props }) => <blockquote className="border-l-2 border-white/20 pl-4 my-2 text-white/45 italic" {...props} />,
-};
-
 export default function Assistant() {
   const navigate = useNavigate();
   const [messages, setMessages] = useState(() => {
@@ -156,8 +219,49 @@ export default function Assistant() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [artifacts, setArtifacts] = useState({});
+  const [openArtifactId, setOpenArtifactId] = useState(null);
   const bottomRef = useRef(null);
   const textRef = useRef(null);
+
+  const mdComponents = useMemo(() => ({
+    p: ({ node, children, ...props }) => {
+      const flat = Array.isArray(children) ? children.join('') : String(children ?? '');
+      const artMatch = flat.trim().match(/^\[ARTIFACT:([^\]]+)\]$/);
+      if (artMatch) {
+        const art = artifacts[artMatch[1]];
+        if (art) return <ArtifactCard artifact={art} onClick={() => setOpenArtifactId(artMatch[1])} />;
+      }
+      const loadMatch = flat.trim().match(/^\[ARTIFACT_LOADING:(.+)\]$/);
+      if (loadMatch) {
+        return (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02] mt-2 mb-2 text-white/25 text-[13px]">
+            <Code2 size={13} className="animate-pulse shrink-0" />
+            <span>Generating {loadMatch[1]}...</span>
+          </div>
+        );
+      }
+      return <p className="mb-2 last:mb-0 leading-7" {...props} />;
+    },
+    ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
+    ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+    li: ({ node, ...props }) => <li className="leading-relaxed" {...props} />,
+    strong: ({ node, ...props }) => <strong className="font-semibold text-white" {...props} />,
+    em: ({ node, ...props }) => <em className="italic text-white/80" {...props} />,
+    pre: ({ node, children }) => <>{children}</>,
+    code: ({ node, inline, className, children, ...props }) => {
+      const match = /language-(\w+)/.exec(className || '');
+      if (!inline && (match || String(children).includes('\n'))) {
+        return <CodeBlock language={match?.[1]}>{children}</CodeBlock>;
+      }
+      return <code className="bg-white/[0.08] border border-white/[0.06] px-1.5 py-0.5 rounded text-[13px] font-mono text-purple-300" {...props}>{children}</code>;
+    },
+    h1: ({ node, ...props }) => <h1 className="font-bold text-white text-xl mb-3 mt-4" {...props} />,
+    h2: ({ node, ...props }) => <h2 className="font-semibold text-white text-lg mb-2 mt-3" {...props} />,
+    h3: ({ node, ...props }) => <h3 className="font-medium text-white/90 mb-2 mt-2" {...props} />,
+    a: ({ node, ...props }) => <a className="text-blue-400 underline hover:text-blue-300 transition-colors" target="_blank" rel="noopener noreferrer" {...props} />,
+    blockquote: ({ node, ...props }) => <blockquote className="border-l-2 border-white/20 pl-4 my-2 text-white/45 italic" {...props} />,
+  }), [artifacts, setOpenArtifactId]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.filter(m => !m.streaming)));
@@ -198,7 +302,7 @@ export default function Assistant() {
     const history = messages
       .filter(m => !m.streaming)
       .concat(userMsg)
-      .map(m => ({ role: m.role, content: m.content }));
+      .map(m => ({ role: m.role, content: m.rawContent || m.content }));
 
     try {
       const res = await fetch('/api/chat', {
@@ -217,16 +321,24 @@ export default function Assistant() {
       const thinkTime = think ? Math.max(1, Math.round(think.length / 400)) : 0;
 
       const { path, text: cleaned } = stripNav(full);
-
-      let revealed = '';
-      for (let i = 0; i < cleaned.length; i++) {
-        revealed += cleaned[i];
-        const snap = revealed;
-        setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: snap, thinking: think, thinkTime, streaming: true } : m));
-        await new Promise(r => setTimeout(r, 8));
+      const newArtifacts = extractArtifacts(cleaned);
+      if (Object.keys(newArtifacts).length > 0) {
+        setArtifacts(prev => ({ ...prev, ...newArtifacts }));
+        const displayContent = toDisplayContent(cleaned);
+        setMessages(prev => prev.map(m => m.id === aiId
+          ? { ...m, content: displayContent, rawContent: cleaned, thinking: think, thinkTime, streaming: false }
+          : m
+        ));
+      } else {
+        let revealed = '';
+        for (let i = 0; i < cleaned.length; i++) {
+          revealed += cleaned[i];
+          const snap = revealed;
+          setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: snap, thinking: think, thinkTime, streaming: true } : m));
+          await new Promise(r => setTimeout(r, 8));
+        }
+        setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: cleaned, thinking: think, thinkTime, streaming: false } : m));
       }
-
-      setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: cleaned, thinking: think, thinkTime, streaming: false } : m));
       if (path) setTimeout(() => navigate(path), 700);
     } catch {
       setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: 'Sorry, something went wrong. Please try again.', streaming: false } : m));
@@ -242,7 +354,7 @@ export default function Assistant() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col" style={{ minHeight: 'calc(100vh - 4rem)' }}>
+    <div className="flex flex-col transition-all duration-300" style={{ minHeight: 'calc(100vh - 4rem)', paddingRight: openArtifactId ? '480px' : 0 }}>
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-10">
         {isEmpty ? (
@@ -334,7 +446,7 @@ export default function Assistant() {
       {/* Input */}
       <div className="sticky bottom-0 bg-gradient-to-t from-black via-black/90 to-transparent pt-4 pb-4 px-6">
         <div className="max-w-2xl mx-auto">
-          <div className="flex items-end gap-2 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-1.5 focus-within:border-white/[0.18] transition-colors">
+          <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-1 focus-within:border-white/[0.18] transition-colors">
             <textarea
               ref={textRef}
               value={input}
@@ -346,27 +458,36 @@ export default function Assistant() {
               className="flex-1 bg-transparent text-sm text-white placeholder-white/20 resize-none focus:outline-none disabled:opacity-40 leading-normal py-0.5"
               style={{ maxHeight: '160px' }}
             />
-            <div className="flex items-center gap-1.5 shrink-0 pb-0.5">
+            <div className="flex items-center gap-1 shrink-0">
               <button
                 onClick={clearChat}
                 title="Clear chat"
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-white/20 hover:text-white/45 transition-colors"
+                className="w-6 h-6 rounded-lg flex items-center justify-center text-white/20 hover:text-white/45 transition-colors"
               >
-                <RotateCcw size={13} className={clearing ? 'animate-spin' : ''} />
+                <RotateCcw size={12} className={clearing ? 'animate-spin' : ''} />
               </button>
               <motion.button
                 onClick={() => doSend()}
                 disabled={!input.trim() || busy}
-                className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black disabled:opacity-20 hover:bg-white/90 transition-all"
+                className="w-7 h-7 rounded-lg bg-white flex items-center justify-center text-black disabled:opacity-20 hover:bg-white/90 transition-all"
                 whileTap={{ scale: 0.88 }}
               >
-                <Send size={12} />
+                <Send size={11} />
               </motion.button>
             </div>
           </div>
-          <p className="text-center text-[10px] text-white/12 mt-2">Shift + Enter for new line</p>
+          <p className="text-center text-[10px] text-white/10 mt-1.5">Shift + Enter for new line</p>
         </div>
-      </div>
-    </div>
+      </div>      {createPortal(
+        <AnimatePresence>
+          {openArtifactId && artifacts[openArtifactId] && (
+            <ArtifactPanel
+              artifact={artifacts[openArtifactId]}
+              onClose={() => setOpenArtifactId(null)}
+            />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}    </div>
   );
 }
