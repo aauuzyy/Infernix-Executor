@@ -745,7 +745,7 @@ export default function ChatSidebar() {
       const elapsed = Math.max(1, Math.round((Date.now() - reqStart) / 1000));
       const thinkTime = think ? Math.max(elapsed, Math.round(think.length / 400)) : 0;
 
-      const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
+      const { path, hasClear, afterMsg, openUrl, text: cleaned } = stripNav(full);
       const unFenced = cleaned
         .replace(/```[\w]*\s*(<artifact[\s\S]*?<\/artifact>)\s*```/g, '$1')
         .replace(/```[\w]*\s*(<artifact-patch[\s\S]*?<\/artifact-patch>)\s*```/g, '$1');
@@ -835,6 +835,7 @@ export default function ChatSidebar() {
         localStorage.removeItem(ARTIFACT_KEY);
       }, 900);
       if (path) setTimeout(() => navigate(path), 700);
+      if (openUrl) setTimeout(() => window.open(openUrl, '_blank', 'noopener,noreferrer'), 700);
 
     } catch (err) {
       const msg = err?.message || 'Sorry, something went wrong. Please try again.';

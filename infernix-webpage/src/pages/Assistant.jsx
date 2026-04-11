@@ -12,6 +12,11 @@ const STORAGE_KEY = 'infernix-assistant-v1';
 const ARTIFACT_KEY = 'infernix-assistant-artifacts-v1';
 const NAV_RE = /\[NAV:(\/[^\]]*)\]/g;
 const AFTER_RE = /\[AFTER:([\s\S]*?)\]/;
+const OPEN_RE = /\[OPEN:([^\]]+)\]/g;
+
+const OPEN_URLS = {
+  discord: 'https://discord.gg/d3CdsJnHHb',
+};
 
 function stripNav(text) {
   const navMatches = [...text.matchAll(NAV_RE)];
@@ -19,7 +24,10 @@ function stripNav(text) {
   const hasClear = /\[CLEAR\]/.test(text);
   const afterMatch = AFTER_RE.exec(text);
   const afterMsg = afterMatch ? afterMatch[1].trim() : null;
-  return { path, hasClear, afterMsg, text: text.replace(NAV_RE, '').replace(/\[CLEAR\]/g, '').replace(AFTER_RE, '').trim() };
+  const openMatches = [...text.matchAll(OPEN_RE)];
+  const openKey = openMatches.length ? openMatches[openMatches.length - 1][1].toLowerCase().trim() : null;
+  const openUrl = openKey ? (OPEN_URLS[openKey] ?? null) : null;
+  return { path, hasClear, afterMsg, openUrl, text: text.replace(NAV_RE, '').replace(/\[CLEAR\]/g, '').replace(AFTER_RE, '').replace(OPEN_RE, '').trim() };
 }
 
 const SUGGESTIONS = [
@@ -502,7 +510,7 @@ export default function Assistant() {
       const elapsed = Math.max(1, Math.round((Date.now() - reqStart) / 1000));
       const thinkTime = think ? Math.max(elapsed, Math.round(think.length / 400)) : 0;
 
-      const { path, hasClear, afterMsg, text: cleaned } = stripNav(full);
+      const { path, hasClear, afterMsg, openUrl, text: cleaned } = stripNav(full);
       const unFenced = cleaned
         .replace(/```[\w]*\s*(<artifact[\s\S]*?<\/artifact>)\s*```/g, '$1')
         .replace(/```[\w]*\s*(<artifact-patch[\s\S]*?<\/artifact-patch>)\s*```/g, '$1');
@@ -606,6 +614,7 @@ export default function Assistant() {
         localStorage.removeItem(ARTIFACT_KEY);
       }, 900);
       if (path) setTimeout(() => navigate(path), 700);
+      if (openUrl) setTimeout(() => window.open(openUrl, '_blank', 'noopener,noreferrer'), 700);
     } catch (err) {
       const msg = err?.message || 'Sorry, something went wrong. Please try again.';
       setMessages(prev => prev.map(m => m.id === aiId ? { ...m, content: msg, streaming: false } : m));
