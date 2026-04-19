@@ -3,7 +3,8 @@
   "functions": {
     "api/chat.js": { "maxDuration": 60 }
   },
-  "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/(?!api/).*", "dest": "/index.html" }
   ]
 }
