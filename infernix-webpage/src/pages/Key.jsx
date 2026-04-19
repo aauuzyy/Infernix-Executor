@@ -170,11 +170,180 @@ export default function KeyPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start px-4 py-24 relative">
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-24 relative">
       {/* Ambient background glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white/[0.015] blur-3xl" />
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-white/[0.012] blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full bg-white/[0.008] blur-3xl" />
       </div>
+
+      {/* Page header */}
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-center mb-12 w-full max-w-4xl"
+      >
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-black border border-white/15 flex items-center justify-center">
+            <Flame className="w-5 h-5 text-white" />
+          </div>
+          <span className="text-xl font-bold text-white">Infernix</span>
+        </div>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.1] text-xs text-white/40 mb-4">
+          <Key className="w-3 h-3" />
+          Key System
+        </div>
+        <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">Get Your Key</h1>
+        <p className="text-white/40 text-sm max-w-sm mx-auto leading-relaxed">
+          Free 3-day access key. No account needed — click, copy, paste.
+        </p>
+
+        {/* Pills */}
+        <div className="flex flex-wrap justify-center gap-2 mt-5">
+          {['Free', 'No Account', 'Instant', '3-Day Access', 'Windows 10/11'].map(tag => (
+            <span key={tag} className="px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs text-white/35">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* Two-column body */}
+      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+
+        {/* LEFT — key card */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          <div className="relative">
+            <div className="absolute -inset-[1px] rounded-2xl bg-gradient-to-b from-white/10 to-white/[0.03]" />
+            <div className="relative bg-[#080808] rounded-2xl p-6 md:p-8 flex flex-col gap-6">
+              <AnimatePresence mode="wait">
+                {state === 'idle' && (
+                  <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-5">
+                    <div className="text-center">
+                      <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mx-auto mb-4">
+                        <Key className="w-7 h-7 text-white/60" />
+                      </div>
+                      <p className="text-sm text-white/40">
+                        Keys are valid for <span className="text-white/70 font-medium">3 days</span> from generation.
+                        After expiry, simply generate a new one.
+                      </p>
+                    </div>
+                    <motion.button
+                      onClick={generate}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="w-full py-3.5 rounded-xl bg-white text-black font-semibold text-sm transition-all hover:bg-white/90 relative overflow-hidden group"
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        <Flame className="w-4 h-4" />
+                        Generate Key
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-black/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                    </motion.button>
+                  </motion.div>
+                )}
+
+                {state === 'generating' && (
+                  <motion.div key="generating" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <GeneratingAnimation step={genStep} />
+                  </motion.div>
+                )}
+
+                {state === 'done' && (
+                  <motion.div key="done" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <KeyDisplay keyValue={keyValue} expiresAt={expiresAt} onCopy={copy} copied={copied} />
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.6 }}
+                      onClick={() => { setState('idle'); setKeyValue(''); setExpiresAt(null); }}
+                      className="mt-5 w-full py-2.5 rounded-xl border border-white/[0.07] text-white/30 text-sm hover:text-white/60 hover:border-white/15 transition-all flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      Generate another key
+                    </motion.button>
+                  </motion.div>
+                )}
+
+                {state === 'error' && (
+                  <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-3 py-4">
+                    <AlertCircle className="w-10 h-10 text-red-400/70" />
+                    <p className="text-sm text-red-400/80 text-center">{errorMsg}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          <p className="mt-4 text-xs text-white/20 text-center">
+            Having issues?{' '}
+            <a href="https://discord.gg/d3CdsJnHHb" target="_blank" rel="noopener noreferrer" className="text-white/40 hover:text-white/60 transition-colors underline">
+              Join our Discord
+            </a>{' '}
+            for support.
+          </p>
+        </motion.div>
+
+        {/* RIGHT — how it works + what's included */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.18 }}
+          className="flex flex-col gap-8"
+        >
+          {/* How it works */}
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-white/20 mb-4">How it works</p>
+            <div className="flex flex-col gap-3">
+              {[
+                { n: '1', title: 'Generate', desc: 'Click the button to instantly create a unique key tied to your IP.' },
+                { n: '2', title: 'Copy',     desc: 'Copy the key to your clipboard with one click.' },
+                { n: '3', title: 'Paste & go', desc: 'Open Infernix, paste the key on startup, and you\'re in.' },
+              ].map(s => (
+                <div key={s.n} className="flex items-start gap-4 bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-3.5">
+                  <div className="w-7 h-7 rounded-full bg-white/[0.05] border border-white/[0.09] flex items-center justify-center text-[11px] font-bold text-white/35 shrink-0 mt-0.5">{s.n}</div>
+                  <div>
+                    <p className="text-sm font-semibold text-white/65">{s.title}</p>
+                    <p className="text-xs text-white/30 mt-0.5 leading-relaxed">{s.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* What's included */}
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-white/20 mb-4">What&apos;s included</p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { icon: <Zap    className="w-4 h-4" />, title: 'Script Hub',      desc: '10,000+ ready-to-run scripts' },
+                { icon: <Brain  className="w-4 h-4" />, title: 'AI Assistant',    desc: 'Generate Lua scripts with AI' },
+                { icon: <Shield className="w-4 h-4" />, title: 'Anti-cheat Safe', desc: 'Bypasses Byfron & Hyperion' },
+                { icon: <Code2  className="w-4 h-4" />, title: 'Monaco Editor',   desc: 'Pro-grade Lua code editor' },
+              ].map(f => (
+                <div key={f.title} className="flex flex-col gap-2.5 bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
+                  <div className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-white/35">
+                    {f.icon}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white/65">{f.title}</p>
+                    <p className="text-xs text-white/30 mt-0.5 leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
 
       {/* Header */}
       <motion.div
