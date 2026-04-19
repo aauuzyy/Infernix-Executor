@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+﻿import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -583,7 +583,7 @@ function MsgCtxMenu({ x, y, msg, onClose, onAIAction }) {
 const SUGGESTIONS = [
   "What features does Infernix have?",
   "Take me to the download page",
-  "What's new in v1.3.2?",
+  "What's new in v1.3.3?",
   "How do I use the AI assistant?",
 ];
 

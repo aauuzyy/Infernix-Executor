@@ -64,7 +64,7 @@ import './App.css';
 function AppContent() {
   const [activeView, setActiveView] = useState('dashboard');
   const [clients, setClients] = useState([]);
-  const [executorVersion, setExecutorVersion] = useState('1.3.2');
+  const [executorVersion, setExecutorVersion] = useState('1.3.3');
   const [executionCount, setExecutionCount] = useState(0);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -139,7 +139,7 @@ function AppContent() {
         const ver =
           (await window.electronAPI.getCurrentVersion?.()) ||
           (await window.electronAPI.getVersion?.()) ||
-          '1.3.2';
+          '1.3.3';
         setExecutorVersion(String(ver).replace(/^v/, ''));
       })();
     }
