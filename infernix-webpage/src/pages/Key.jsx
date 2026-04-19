@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Flame, Key, Copy, Check, AlertCircle, RefreshCw, Clock, Shield } from 'lucide-react';
+import { Flame, Key, Copy, Check, AlertCircle, RefreshCw, Clock, Shield, Zap, Brain, Code2 } from 'lucide-react';
 
 const STEPS = [
   'Initializing secure session...',
@@ -118,6 +119,7 @@ export default function KeyPage() {
   const [errorMsg, setErrorMsg] = useState('');
   const [genStep, setGenStep] = useState(0);
   const stepRef = useRef(null);
+  const [searchParams] = useSearchParams();
 
   const generate = async () => {
     if (state !== 'idle') return;
@@ -146,6 +148,14 @@ export default function KeyPage() {
     }
   };
 
+  // Auto-start key generation when navigated here by the AI assistant
+  useEffect(() => {
+    if (searchParams.get('autostart') === '1') {
+      const t = setTimeout(() => generate(), 700);
+      return () => clearTimeout(t);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const copy = () => {
     navigator.clipboard.writeText(keyValue).catch(() => {
       const el = document.createElement('textarea');
@@ -160,7 +170,7 @@ export default function KeyPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-24 relative">
+    <div className="min-h-screen flex flex-col items-center justify-start px-4 py-24 relative">
       {/* Ambient background glow */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-white/[0.015] blur-3xl" />
@@ -189,6 +199,20 @@ export default function KeyPage() {
         <p className="text-white/40 text-base max-w-md mx-auto leading-relaxed">
           Generate a free 3-day access key. No account needed — just click, copy, and paste into Infernix.
         </p>
+      </motion.div>
+
+      {/* Feature pills */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.08 }}
+        className="flex flex-wrap justify-center gap-2 mb-8"
+      >
+        {['Free', 'No Account', 'Instant', '3-Day Access', 'Windows 10/11'].map(tag => (
+          <span key={tag} className="px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs text-white/35">
+            {tag}
+          </span>
+        ))}
       </motion.div>
 
       {/* Main card */}
@@ -283,6 +307,59 @@ export default function KeyPage() {
         </a>{' '}
         for support.
       </motion.p>
+
+      {/* How it works */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.55, duration: 0.5 }}
+        className="w-full max-w-md mt-12"
+      >
+        <p className="text-[10px] uppercase tracking-widest text-white/20 text-center mb-5">How it works</p>
+        <div className="flex flex-col gap-3">
+          {[
+            { n: '1', title: 'Generate',     desc: 'Click the button to instantly create a unique key' },
+            { n: '2', title: 'Copy',         desc: 'Copy the key to your clipboard with one click' },
+            { n: '3', title: 'Paste & go',   desc: 'Open Infernix, paste the key on startup, and you\'re in' },
+          ].map(s => (
+            <div key={s.n} className="flex items-center gap-4 bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-3">
+              <div className="w-7 h-7 rounded-full bg-white/[0.05] border border-white/[0.09] flex items-center justify-center text-[11px] font-bold text-white/35 shrink-0">{s.n}</div>
+              <div>
+                <p className="text-sm font-semibold text-white/65">{s.title}</p>
+                <p className="text-xs text-white/30 mt-0.5">{s.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
+
+      {/* What's included grid */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7, duration: 0.5 }}
+        className="w-full max-w-md mt-8 mb-16"
+      >
+        <p className="text-[10px] uppercase tracking-widest text-white/20 text-center mb-5">What&apos;s included</p>
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            { icon: <Zap   className="w-4 h-4" />, title: 'Script Hub',      desc: '10,000+ ready-to-run scripts' },
+            { icon: <Brain className="w-4 h-4" />, title: 'AI Assistant',    desc: 'Generate Lua scripts with AI' },
+            { icon: <Shield className="w-4 h-4" />, title: 'Anti-cheat Safe', desc: 'Bypasses Byfron & Hyperion' },
+            { icon: <Code2 className="w-4 h-4" />, title: 'Monaco Editor',   desc: 'Pro-grade Lua code editor' },
+          ].map(f => (
+            <div key={f.title} className="flex flex-col gap-2.5 bg-white/[0.02] border border-white/[0.06] rounded-xl p-4">
+              <div className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] flex items-center justify-center text-white/35">
+                {f.icon}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white/65">{f.title}</p>
+                <p className="text-xs text-white/30 mt-0.5 leading-relaxed">{f.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </motion.div>
     </div>
   );
 }
