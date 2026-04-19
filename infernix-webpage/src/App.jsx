@@ -10,6 +10,7 @@ import Download from './pages/Download';
 import About from './pages/About';
 import Credits from './pages/Credits';
 import Assistant from './pages/Assistant';
+import Key from './pages/Key';
 
 function CursorGlow() {
   const glowRef = useRef(null);
@@ -85,6 +86,7 @@ function AnimatedRoutes() {
           <Route path="/about" element={<About />} />
           <Route path="/credits" element={<Credits />} />
           <Route path="/assistant" element={<Assistant />} />
+          <Route path="/key" element={<Key />} />
         </Routes>
       </motion.div>
     </AnimatePresence>

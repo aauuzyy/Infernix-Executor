@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import DevPanel from './components/DevPanel';
-import BlacklistOverlay from './components/BlacklistOverlay';
 
 function BackgroundOverlay() {
   const { customBackground, backgroundBlur } = useTheme();
@@ -19,73 +18,60 @@ function BackgroundOverlay() {
     </div>
   );
 }
+
+function CursorGlow() {
+  const glowRef = useRef(null);
+  const pos = useRef({ x: -999, y: -999 });
+  const cur = useRef({ x: -999, y: -999 });
+  const raf = useRef(null);
+  useEffect(() => {
+    const onMove = (e) => { pos.current = { x: e.clientX, y: e.clientY }; };
+    window.addEventListener('mousemove', onMove);
+    const tick = () => {
+      cur.current.x = cur.current.x + (pos.current.x - cur.current.x) * 1.0;
+      cur.current.y = cur.current.y + (pos.current.y - cur.current.y) * 1.0;
+      if (glowRef.current) {
+        glowRef.current.style.transform = `translate(${cur.current.x}px, ${cur.current.y}px)`;
+      }
+      raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => { window.removeEventListener('mousemove', onMove); cancelAnimationFrame(raf.current); };
+  }, []);
+  return (
+    <div ref={glowRef} aria-hidden="true" style={{
+      position: 'fixed', top: -60, left: -60,
+      width: 120, height: 120, borderRadius: '50%',
+      background: 'radial-gradient(circle, rgba(255,255,255,0.045) 0%, transparent 70%)',
+      pointerEvents: 'none', zIndex: 0, willChange: 'transform',
+    }} />
+  );
+}
 import TitleBar from './components/TitleBar';
-import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import EditorView from './components/EditorView';
 import ScriptHub from './components/ScriptHub';
 import ClientManager from './components/ClientManager';
 import SettingsView from './components/SettingsView';
 import Assistant from './components/Assistant';
+import AssistantSidebar from './components/AssistantSidebar';
 import Notification from './components/Notification';
 import UpdateModal from './components/UpdateModal';
+import LoadingScreen from './components/LoadingScreen';
+import KeyGate, { hasSavedKey } from './components/KeyGate';
 import './App.css';
 
-function App() {
-  const [activeView, setActiveView] = useState('executor');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+function AppContent() {
+  const [activeView, setActiveView] = useState('dashboard');
   const [clients, setClients] = useState([]);
-  const [executorVersion, setExecutorVersion] = useState('1.0.0');
+  const [executorVersion, setExecutorVersion] = useState('1.3.2');
   const [executionCount, setExecutionCount] = useState(0);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [isBlockingUpdate, setIsBlockingUpdate] = useState(false);
+  const { setThemeMode, setAccentColor, setColorShift, accentPresets } = useTheme();
   const [startTime] = useState(Date.now());
-
-  // Dev Mode state
-  const [devMode, setDevMode]               = useState(false);
-  const [devTransitioning, setDevTransitioning] = useState(false);
-  const [devOwner, setDevOwner]             = useState('');
-  const [isDevUser, setIsDevUser]           = useState(false); // persists after closing panel
-  const [blacklistData, setBlacklistData]   = useState(null); // blacklist enforcement overlay
-  // Use a ref so the latest devMode value is always accessible in callbacks
-  const devModeRef = useRef(false);
-
-  // Listen for dev mode changes — broadcast every 200ms with clients update
-  useEffect(() => {
-    const handler = (data) => {
-      const wasActive = devModeRef.current;
-      devModeRef.current = data.active;
-      if (data.active) {
-        // Mark this session as dev-eligible (persists when panel is closed)
-        setIsDevUser(true);
-        setDevOwner(data.owner || '');
-        if (!wasActive) {
-          // First time: glitch transition then show panel
-          setDevTransitioning(true);
-          setTimeout(() => {
-            setDevTransitioning(false);
-            setDevMode(true);
-          }, 700);
-        }
-      } else if (!data.active) {
-        setIsDevUser(false);
-        if (wasActive) {
-          setDevMode(false);
-        }
-      }
-    };
-    window.electronAPI?.onDevModeChange?.(handler);
-    return () => window.electronAPI?.removeDevModeListener?.();
-  }, []); // mount once — ref tracks latest value so no stale closure
-
-  // Listen for blacklist enforcement — show scary overlay before app quits
-  useEffect(() => {
-    window.electronAPI?.onBlacklistTriggered?.((data) => {
-      setBlacklistData(data);
-    });
-    return () => window.electronAPI?.removeBlacklistListener?.();
-  }, []);
+  // Assistant sidebar is always open — no toggle
 
   // Listen for client updates from main process
   useEffect(() => {
@@ -148,10 +134,14 @@ function App() {
         updateClients(newClients);
       });
 
-      // Get initial version
-      window.electronAPI.getVersion?.().then((ver) => {
-        setExecutorVersion(ver || '1.0.0');
-      });
+      // Get initial version (prefer app package version for consistent UI/display)
+      (async () => {
+        const ver =
+          (await window.electronAPI.getCurrentVersion?.()) ||
+          (await window.electronAPI.getVersion?.()) ||
+          '1.3.2';
+        setExecutorVersion(String(ver).replace(/^v/, ''));
+      })();
     }
 
     return () => {
@@ -239,13 +229,31 @@ function App() {
     return () => clearTimeout(saveTimeout);
   }, [tabs, activeTab, tabsLoaded]);
 
+  // Ctrl+T: open new tab and switch to executor from anywhere
+  const handleNewTabRef = useRef(null);
+  useEffect(() => { handleNewTabRef.current = handleNewTab; });
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.ctrlKey && e.key === 't') {
+        e.preventDefault();
+        handleNewTabRef.current?.();
+        setActiveView('executor');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // Notification state
   const [notifications, setNotifications] = useState([]);
   const notificationId = useRef(0);
 
-  const addNotification = useCallback((notif) => {
+  const addNotification = useCallback((notif, typeArg) => {
     const id = ++notificationId.current;
-    setNotifications(prev => [...prev, { ...notif, id }]);
+    const normalized = typeof notif === 'string'
+      ? { type: typeArg || 'info', title: notif, id }
+      : { ...notif, id };
+    setNotifications(prev => [...prev, normalized]);
   }, []);
 
   const removeNotification = useCallback((id) => {
@@ -302,6 +310,132 @@ function App() {
     }
   };
 
+  // Navigate to executor and switch to a tab by name (case-insensitive, partial match)
+  const handleNavigateToTab = (tabName) => {
+    setActiveView('executor');
+    const needle = tabName.trim().toLowerCase();
+    const match = tabs.find(t => t.name.toLowerCase() === needle)
+      || tabs.find(t => t.name.toLowerCase().includes(needle));
+    if (match) setActiveTab(match.id);
+  };
+
+  // Apply settings/theme changes from the AI assistant
+  const ACCENT_PRESET_MAP = {
+    fire: '#f97316', ruby: '#ef4444', emerald: '#22c55e', ocean: '#3b82f6',
+    violet: '#8b5cf6', pink: '#ec4899', cyan: '#06b6d4', gold: '#eab308',
+    white: '#ffffff',
+  };
+  const handleApplySettings = useCallback((patch) => {
+    if (!patch) return;
+    // Handle full presets
+    if (patch.__preset) {
+      const name = patch.__preset.toLowerCase();
+      if (name === 'random') {
+        const colors = Object.values(ACCENT_PRESET_MAP);
+        setAccentColor(colors[Math.floor(Math.random() * colors.length)]);
+      } else if (name === 'midnight') {
+        setThemeMode('midnight');
+      } else if (name === 'light') {
+        setThemeMode('light');
+      } else if (name === 'dark') {
+        setThemeMode('dark');
+      } else if (ACCENT_PRESET_MAP[name]) {
+        setAccentColor(ACCENT_PRESET_MAP[name]);
+      }
+      return;
+    }
+    // Handle individual keys
+    if (patch.themeMode) setThemeMode(patch.themeMode);
+    if (patch.accentColor) setAccentColor(patch.accentColor);
+    if (patch.colorShift !== undefined) setColorShift(patch.colorShift);
+    // Boolean settings — persist via electronAPI
+    const settingsKeys = ['autoAttach','autoExecute','closeRoblox','topmost','ansEnabled','ansAutoShutdown','absEnabled','absAutoShutdown','debugConsole'];
+    const settingsPatch = {};
+    for (const k of settingsKeys) {
+      if (patch[k] !== undefined) settingsPatch[k] = patch[k];
+    }
+    if (Object.keys(settingsPatch).length > 0) {
+      window.electronAPI?.loadSettings?.().then(current => {
+        window.electronAPI?.saveSettings?.({ ...current, ...settingsPatch });
+      });
+    }
+    addNotification?.({ type: 'success', title: 'Settings Updated', message: 'Settings applied by AI' });
+  }, [setThemeMode, setAccentColor, setColorShift]);
+
+  const handleScanTab = useCallback(async (tabName) => {
+    const needle = tabName.trim().toLowerCase();
+    const tab = tabs.find(t => t.name.toLowerCase() === needle) || tabs.find(t => t.name.toLowerCase().includes(needle));
+    if (!tab) {
+      addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` });
+      return;
+    }
+    setActiveView('executor');
+    setActiveTab(tab.id);
+    const EXPECTED = ['hacktool','hack.tool','gamehack','game.hack','riskware','exploit','cheat','gamemod','tool.lua','not-a-virus'];
+    const THREATS = ['trojan','stealer','keylogger','backdoor','ransomware','miner','worm','rootkit','spyware','banker','rat.','infostealer'];
+    const SUSPICIOUS = ['grabify.link','iplogger.org','blasze.tk','2no.co','iplogger.com','iplogger.ru','yip.su','iplis.org','ipgrabber.ru','discord.com/api/webhooks'];
+    handleUpdateTabScan(tab.id, 'scanning');
+    addNotification({ type: 'info', title: 'Scanning', message: `Scanning "${tab.name}"...` });
+    try {
+      const content = tab.content || '';
+      const hasSuspiciousDomain = SUSPICIOUS.some(d => content.toLowerCase().includes(d));
+      const vtResult = await window.electronAPI?.virusTotalScan?.(content);
+      if (!vtResult || vtResult.error) {
+        handleUpdateTabScan(tab.id, 'unknown', { error: vtResult?.error || 'Scan failed' });
+        addNotification({ type: 'warning', title: 'Scan Result', message: 'Scan failed or unavailable' });
+        return;
+      }
+      const detections = vtResult.detections || [];
+      let hasRealThreat = false, hasExpected = false;
+      for (const det of detections) {
+        const r = det.result.toLowerCase();
+        if (THREATS.some(t => r.includes(t))) { hasRealThreat = true; break; }
+        if (EXPECTED.some(e => r.includes(e))) hasExpected = true;
+      }
+      if (hasRealThreat || hasSuspiciousDomain) {
+        handleUpdateTabScan(tab.id, 'threat', { detections, hasSuspiciousDomain });
+        addNotification({ type: 'error', title: 'Threat Detected', message: `"${tab.name}" contains a threat!` });
+      } else if (hasExpected) {
+        handleUpdateTabScan(tab.id, 'expected', { detections });
+        addNotification({ type: 'info', title: 'Scan Result', message: `"${tab.name}" looks like a game mod` });
+      } else if (detections.length > 0) {
+        handleUpdateTabScan(tab.id, 'suspicious', { detections });
+        addNotification({ type: 'warning', title: 'Scan Result', message: `"${tab.name}" has suspicious detections` });
+      } else {
+        handleUpdateTabScan(tab.id, 'safe', { detections: [] });
+        addNotification({ type: 'success', title: 'Scan Result', message: `"${tab.name}" is safe!` });
+      }
+    } catch (err) {
+      handleUpdateTabScan(tab.id, 'unknown', { error: err.message });
+      addNotification({ type: 'error', title: 'Scan Error', message: err.message });
+    }
+  }, [tabs, handleUpdateTabScan, addNotification]);
+
+  const handleRobloxAction = useCallback(async (action) => {
+    switch (action) {
+      case 'rejoin':
+        await window.electronAPI?.aiRejoinServer?.();
+        addNotification({ type: 'info', title: 'Rejoining', message: 'Rejoining server...' });
+        break;
+      case 'close-roblox':
+        await window.electronAPI?.killRoblox?.();
+        addNotification({ type: 'info', title: 'Roblox Closed', message: 'Roblox has been closed' });
+        break;
+      case 'restart-infernix':
+        addNotification({ type: 'info', title: 'Restarting', message: 'Infernix is restarting...' });
+        setTimeout(() => window.electronAPI?.restartApp?.(), 1200);
+        break;
+      case 'close-infernix':
+        addNotification({ type: 'info', title: 'Closing', message: 'Closing Infernix...' });
+        setTimeout(() => window.electronAPI?.quitApp?.(), 1200);
+        break;
+      case 'attach':
+        await window.electronAPI?.attach?.();
+        addNotification({ type: 'success', title: 'Attached', message: 'Attached to Roblox' });
+        break;
+    }
+  }, [addNotification]);
+
   const handleLoadScript = (scriptContent) => {
     const newTab = {
       id: tabCounter.current++,
@@ -328,6 +462,7 @@ function App() {
             scriptCount={tabs.length}
             startTime={startTime}
             onViewChange={setActiveView}
+            executorVersion={executorVersion}
           />
         );
       case 'executor':
@@ -364,7 +499,6 @@ function App() {
             onWriteToTab={handleWriteToTab}
             onSwitchToExecutor={handleSwitchToExecutor}
             onNotify={addNotification}
-            devMode={devMode}
           />
         );
       default:
@@ -386,21 +520,61 @@ function App() {
   };
 
   return (
-    <ThemeProvider>
+    <>
       <BackgroundOverlay />
-      <div className={`app ${devTransitioning ? 'dev-mode-transition' : ''}`}>
-        <TitleBar />
+      <div className="app">
+        {/* Grid background (matches website) */}
+        <div className="grid-bg" aria-hidden="true" />
+        {/* Cursor glow */}
+        <CursorGlow />
+        <TitleBar
+          activeView={activeView}
+          onViewChange={setActiveView}
+          clientCount={clients.length}
+        />
         <div className="app-body">
-          <Sidebar
-            activeView={activeView}
-            onViewChange={setActiveView}
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-            clientCount={clients.length}
-          />
-          <main className="main-view">
-            {renderView()}
+          <main className={`main-view${activeView !== 'assistant' ? ' sidebar-open' : ''}`}>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeView}
+                className="view-transition"
+                initial={{ opacity: 0, filter: 'blur(6px)', scale: 0.993 }}
+                animate={{ opacity: 1, filter: 'blur(0px)', scale: 1 }}
+                exit={{ opacity: 0, filter: 'blur(3px)', scale: 0.993 }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              >
+                {renderView()}
+              </motion.div>
+            </AnimatePresence>
           </main>
+
+          {/* Assistant right sidebar — absolutely positioned, never overlaps content */}
+          <AnimatePresence initial={false}>
+            {activeView !== 'assistant' && (
+              <motion.aside
+                className="assistant-sidebar"
+                initial={{ x: 320, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 320, opacity: 0 }}
+                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                style={{ overflow: 'hidden' }}
+              >
+            <AssistantSidebar
+              tabs={tabs}
+              clients={clients}
+              onWriteToTab={handleWriteToTab}
+              onSwitchToExecutor={handleSwitchToExecutor}
+              onNavigate={setActiveView}
+              onNavigateToTab={handleNavigateToTab}
+              onApplySettings={handleApplySettings}
+              onNotify={addNotification}
+              onScanTab={handleScanTab}
+              onRobloxAction={handleRobloxAction}
+              onLoadScript={handleLoadScript}
+            />
+            </motion.aside>
+            )}
+          </AnimatePresence>
         </div>
         {/* Update Modal - blocking when outdated */}
         {showUpdateModal && (
@@ -417,39 +591,27 @@ function App() {
         )}
       </div>
 
-      {/* Dev Panel — rendered outside .app so it overlays everything */}
-      {devMode && (
-        <DevPanel
-          clients={clients}
-          executionCount={executionCount}
-          onViewChange={setActiveView}
-          onClose={() => setDevMode(false)}
-          onNotify={addNotification}
-          tabs={tabs}
-          onWriteToTab={handleWriteToTab}
-          onSwitchToExecutor={handleSwitchToExecutor}
-          owner={devOwner}
-        />
-      )}
-
-      {/* Notifications — rendered outside .app so they appear above DevPanel overlay */}
+      {/* Notifications */}
       <Notification notifications={notifications} onRemove={removeNotification} />
+    </>
+  );
+}
 
-      {/* Blacklist enforcement overlay — covers everything */}
-      {blacklistData && <BlacklistOverlay data={blacklistData} />}
+function App() {
+  const [ready, setReady] = useState(false);   // loading screen done
+  const [keyed, setKeyed] = useState(false);    // key validated
 
-      {/* Floating re-enter button — visible only for dev users when panel is closed */}
-      {isDevUser && !devMode && !devTransitioning && (
-        <button
-          className="dev-reenter-btn"
-          title="Re-enter Dev Mode"
-          onClick={() => setDevMode(true)}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-          </svg>
-        </button>
-      )}
+  // After loading finishes, check for a saved valid key
+  const handleLoadingDone = () => {
+    setReady(true);
+    if (hasSavedKey()) setKeyed(true);
+  };
+
+  if (!ready) return <LoadingScreen onDone={handleLoadingDone} />;
+  if (!keyed) return <KeyGate onUnlocked={() => setKeyed(true)} />;
+  return (
+    <ThemeProvider>
+      <AppContent />
     </ThemeProvider>
   );
 }

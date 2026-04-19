@@ -31,14 +31,16 @@ const features = [
 
 const changelog = [
   {
-    version: '1.3.1',
-    date: 'April 8, 2026',
+    version: '1.3.2',
+    date: 'April 18, 2026',
     type: 'release',
     changes: [
-      'Xeno DLL updated for latest Roblox version',
-      'Removed Military AI tab for a cleaner interface',
-      'Version reporting fixed for accurate update webhooks',
-      'UI refinements and stability improvements',
+      'Pulses rings on loading screen',
+      'Sidebar slides out when on Assistant tab',
+      'AI auto-navigates when navigation intent detected',
+      'Smooth tab scroll animation',
+      'Grid background more visible',
+      'Copy/Send to Editor hover fix',
     ],
   },
   {
@@ -162,8 +164,8 @@ export default function Download() {
                 <Flame className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Infernix v1.3.1</h2>
-                <p className="text-gray-500 text-sm">April 8, 2026 — Latest Release</p>
+                <h2 className="text-2xl font-bold text-white">Infernix v1.3.2</h2>
+                <p className="text-gray-500 text-sm">April 18, 2026 — Latest Release</p>
               </div>
             </div>
 
@@ -209,7 +211,7 @@ export default function Download() {
           {/* Latest Updates */}
           <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
             <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-              What's New in v1.3.1
+              What's New in v1.3.2
             </h3>
             <div className="space-y-2">
               {changelog[0].changes.slice(0, 5).map((change, index) => (

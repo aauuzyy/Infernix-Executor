@@ -9,6 +9,7 @@ const navLinks = [
   { name: 'Download', path: '/download' },
   { name: 'Credits', path: '/credits' },
   { name: 'Assistant', path: '/assistant' },
+  { name: 'Get Key', path: '/key' },
 ];
 
 export default function Navbar() {
