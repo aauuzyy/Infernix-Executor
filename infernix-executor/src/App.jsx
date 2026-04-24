@@ -59,18 +59,117 @@ import Notification from './components/Notification';
 import UpdateModal from './components/UpdateModal';
 import LoadingScreen from './components/LoadingScreen';
 import KeyGate, { hasSavedKey } from './components/KeyGate';
+import TutorialOverlay from './components/TutorialOverlay';
+import CollabView from './components/CollabView';
+import { revalidateStoredSession, subscribeToSession, pushContent, clearStoredSession, openCursorChannel } from './services/collabService';
 import './App.css';
 
 function AppContent() {
   const [activeView, setActiveView] = useState('dashboard');
   const [clients, setClients] = useState([]);
-  const [executorVersion, setExecutorVersion] = useState('1.3.3');
+  const [executorVersion, setExecutorVersion] = useState('1.3.5');
   const [executionCount, setExecutionCount] = useState(0);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [isBlockingUpdate, setIsBlockingUpdate] = useState(false);
-  const { setThemeMode, setAccentColor, setColorShift, accentPresets } = useTheme();
+  const { setThemeMode, setAccentColor, setColorShift, accentPresets, themeMode, accentColor } = useTheme();
   const [startTime] = useState(Date.now());
+  const [scanFeedback, setScanFeedback] = useState(null);
+  const [tutorialActive, setTutorialActive] = useState(false);
+
+  // ── Collab state ──────────────────────────────────────────────────────────
+  // collabSession: null | { sessionId, expiresAt, role } when a session is active
+  const [collabSession, setCollabSession] = useState(null);
+  const collabTabIdRef = useRef(null); // tab id of the Collaborate tab
+  const collabUnsub = useRef(null);    // Realtime unsubscribe fn
+  const collabPushTimer = useRef(null);
+  const collabCursorChannel = useRef(null); // Broadcast channel for cursor positions
+  // remoteWrite: signals EditorView to push content directly into the Monaco model
+  const [remoteWrite, setRemoteWrite] = useState(null); // { tabId, content, seq }
+  const remoteWriteSeq = useRef(0);
+  // remoteCursors: map of userId -> { lineNumber, column }
+  const [remoteCursors, setRemoteCursors] = useState({});
+
+  // On app startup: check for a stored session and restore it if both sides are online
+  useEffect(() => {
+    (async () => {
+      const session = await revalidateStoredSession();
+      if (!session) return;
+      // Only auto-reopen when both host and guest are registered
+      if (!session.partnerOnline) return;
+      startCollabSession(session);
+    })();
+  }, []); // eslint-disable-line
+
+  const startCollabSession = (session) => {
+    // Close any old Collaborate tab
+    if (collabTabIdRef.current !== null) {
+      setTabs(prev => prev.filter(t => t.id !== collabTabIdRef.current));
+    }
+    // Create new Collaborate tab
+    const collabId = tabCounter.current++;
+    collabTabIdRef.current = collabId;
+    setTabs(prev => [...prev, { id: collabId, name: 'Collaborate', content: session.content || '', isCollab: true }]);
+    setActiveTab(collabId);
+    setActiveView('executor');
+    setCollabSession({ sessionId: session.sessionId, expiresAt: session.expiresAt, role: session.role });
+
+    // Subscribe to Realtime content updates
+    if (collabUnsub.current) collabUnsub.current();
+    collabUnsub.current = subscribeToSession(
+      session.sessionId,
+      (remoteContent) => {
+        // Update React tab state
+        setTabs(prev => prev.map(t =>
+          t.id === collabTabIdRef.current ? { ...t, content: remoteContent } : t
+        ));
+        // Also push directly into Monaco model via remoteWrite signal
+        setRemoteWrite({ tabId: collabTabIdRef.current, content: remoteContent, seq: ++remoteWriteSeq.current });
+      },
+      () => {
+        addNotification({ type: 'warning', title: 'Collaborate', message: 'Session expired. Generate a new friend code.' });
+        endCollabSession();
+      }
+    );
+
+    // Open cursor broadcast channel
+    if (collabCursorChannel.current) collabCursorChannel.current.close();
+    collabCursorChannel.current = openCursorChannel(session.sessionId, ({ userId, lineNumber, column }) => {
+      setRemoteCursors(prev => ({ ...prev, [userId]: { lineNumber, column } }));
+    });
+
+    addNotification({ type: 'success', title: 'Collaborate', message: 'Shared editor is live!' });
+  };
+
+  const endCollabSession = () => {
+    if (collabUnsub.current) { collabUnsub.current(); collabUnsub.current = null; }
+    if (collabCursorChannel.current) { collabCursorChannel.current.close(); collabCursorChannel.current = null; }
+    if (collabTabIdRef.current !== null) {
+      setTabs(prev => prev.filter(t => t.id !== collabTabIdRef.current));
+      collabTabIdRef.current = null;
+    }
+    setCollabSession(null);
+    setRemoteCursors({});
+    clearStoredSession();
+  };
+
+  // When the Collaborate tab content changes, push to Supabase (debounced 600ms)
+  const handleCollabCodeChange = (tabId, content) => {
+    if (tabId !== collabTabIdRef.current || !collabSession) return;
+    clearTimeout(collabPushTimer.current);
+    collabPushTimer.current = setTimeout(() => {
+      pushContent(collabSession.sessionId, content).catch(() => {});
+    }, 600);
+  };
+
+  // Broadcast local cursor position to partner
+  const handleSendCursor = (lineNumber, column) => {
+    if (!collabSession || !collabCursorChannel.current) return;
+    const userId = collabSession.role; // 'host' or 'guest'
+    collabCursorChannel.current.send(userId, lineNumber, column);
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
   // Assistant sidebar is always open — no toggle
 
   // Listen for client updates from main process
@@ -139,7 +238,7 @@ function AppContent() {
         const ver =
           (await window.electronAPI.getCurrentVersion?.()) ||
           (await window.electronAPI.getVersion?.()) ||
-          '1.3.3';
+          '1.3.5';
         setExecutorVersion(String(ver).replace(/^v/, ''));
       })();
     }
@@ -151,6 +250,30 @@ function AppContent() {
 
   // NOTE: Removed fallback polling — it called getClients() which returns raw
   // addon data without placeId merge, causing the client list to flicker every 1s.
+
+  // Auto-start tutorial on first run
+  useEffect(() => {
+    const seen = localStorage.getItem('infernix-tutorial-seen');
+    if (!seen) {
+      const t = setTimeout(() => setTutorialActive(true), 1800);
+      return () => clearTimeout(t);
+    }
+  }, []);
+
+  // Mark tutorial as seen when it closes
+  const handleTutorialClose = useCallback(() => {
+    localStorage.setItem('infernix-tutorial-seen', '1');
+    setTutorialActive(false);
+  }, []);
+
+  // Drive Discord RPC state from client attachment status
+  useEffect(() => {
+    const hasAttached = clients.some(c => {
+      const status = Array.isArray(c) ? c[3] : c.status;
+      return status === 3;
+    });
+    window.electronAPI?.setRPCState?.(hasAttached ? 'attached' : 'idle');
+  }, [clients]);
 
   // Auto-check for updates on startup
   useEffect(() => {
@@ -274,6 +397,8 @@ function AppContent() {
 
   const handleCloseTab = (tabId) => {
     if (tabs.length === 1) return;
+    // Prevent manually closing the Collaborate tab while session is active
+    if (tabId === collabTabIdRef.current && collabSession) return;
     const newTabs = tabs.filter(t => t.id !== tabId);
     setTabs(newTabs);
     if (activeTab === tabId) {
@@ -288,9 +413,13 @@ function AppContent() {
   };
 
   const handleCodeChange = (tabId, content) => {
-    setTabs(tabs.map(t => 
+    setTabs(tabs.map(t =>
       t.id === tabId ? { ...t, content } : t
     ));
+    // Push to Supabase if this is the collab tab
+    if (tabId === collabTabIdRef.current && collabSession) {
+      handleCollabCodeChange(tabId, content);
+    }
   };
 
   // Alias used by Assistant to write generated code into a tab
@@ -383,6 +512,7 @@ function AppContent() {
       if (!vtResult || vtResult.error) {
         handleUpdateTabScan(tab.id, 'unknown', { error: vtResult?.error || 'Scan failed' });
         addNotification({ type: 'warning', title: 'Scan Result', message: 'Scan failed or unavailable' });
+        setScanFeedback({ tabName: tab.name, status: 'unknown', detections: [], error: vtResult?.error || 'Scan failed or unavailable', timestamp: Date.now() });
         return;
       }
       const detections = vtResult.detections || [];
@@ -395,19 +525,24 @@ function AppContent() {
       if (hasRealThreat || hasSuspiciousDomain) {
         handleUpdateTabScan(tab.id, 'threat', { detections, hasSuspiciousDomain });
         addNotification({ type: 'error', title: 'Threat Detected', message: `"${tab.name}" contains a threat!` });
+        setScanFeedback({ tabName: tab.name, status: 'threat', detections, hasSuspiciousDomain, timestamp: Date.now() });
       } else if (hasExpected) {
         handleUpdateTabScan(tab.id, 'expected', { detections });
         addNotification({ type: 'info', title: 'Scan Result', message: `"${tab.name}" looks like a game mod` });
+        setScanFeedback({ tabName: tab.name, status: 'expected', detections, timestamp: Date.now() });
       } else if (detections.length > 0) {
         handleUpdateTabScan(tab.id, 'suspicious', { detections });
         addNotification({ type: 'warning', title: 'Scan Result', message: `"${tab.name}" has suspicious detections` });
+        setScanFeedback({ tabName: tab.name, status: 'suspicious', detections, timestamp: Date.now() });
       } else {
         handleUpdateTabScan(tab.id, 'safe', { detections: [] });
         addNotification({ type: 'success', title: 'Scan Result', message: `"${tab.name}" is safe!` });
+        setScanFeedback({ tabName: tab.name, status: 'safe', detections: [], timestamp: Date.now() });
       }
     } catch (err) {
       handleUpdateTabScan(tab.id, 'unknown', { error: err.message });
       addNotification({ type: 'error', title: 'Scan Error', message: err.message });
+      setScanFeedback({ tabName: tab.name, status: 'unknown', detections: [], error: err.message, timestamp: Date.now() });
     }
   }, [tabs, handleUpdateTabScan, addNotification]);
 
@@ -436,6 +571,94 @@ function AppContent() {
     }
   }, [addNotification]);
 
+  const handleAddToAutoExec = useCallback(async (tabName) => {
+    const needle = (tabName || '').trim().toLowerCase();
+    let matchTabs;
+    if (needle === 'all') {
+      matchTabs = tabs;
+    } else {
+      const found = tabs.find(t => t.name.toLowerCase() === needle)
+        || tabs.find(t => t.name.toLowerCase().includes(needle));
+      matchTabs = found ? [found] : [];
+    }
+    if (matchTabs.length === 0) {
+      addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` });
+      return;
+    }
+    for (const tab of matchTabs) {
+      await window.electronAPI?.addToAutoExec?.({ name: tab.name, content: tab.content });
+    }
+    addNotification({ type: 'success', title: 'Auto Execute', message: `${matchTabs.length} script(s) added to Auto Execute` });
+  }, [tabs, addNotification]);
+
+  const handleSavePreset = useCallback(async (presetName) => {
+    try {
+      const settings = await window.electronAPI?.loadSettings?.();
+      const presetData = {
+        name: presetName || 'AI Preset',
+        description: `Saved by Infernix AI — ${themeMode} theme`,
+        settings: settings || null,
+        theme: { themeMode, accentColor },
+        tabs: null,
+      };
+      const result = await window.electronAPI?.savePreset?.(presetData);
+      if (result?.ok) {
+        addNotification({ type: 'success', title: 'Preset Saved', message: `"${presetData.name}" saved to Preset Manager` });
+      }
+    } catch {
+      addNotification({ type: 'error', title: 'Preset Error', message: 'Failed to save preset' });
+    }
+  }, [themeMode, accentColor, addNotification]);
+
+  const handleExecuteTab = useCallback(async (tabName) => {
+    const needle = tabName.trim().toLowerCase();
+    const tab = tabs.find(t => t.name.toLowerCase() === needle) || tabs.find(t => t.name.toLowerCase().includes(needle));
+    if (!tab) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
+    const attached = clients.filter(c => (Array.isArray(c) ? c[3] : c.status) === 3);
+    if (attached.length === 0) { addNotification({ type: 'warning', title: 'Not Attached', message: 'Attach to Roblox first' }); return; }
+    await window.electronAPI?.execute?.(tab.content, attached.map(c => Array.isArray(c) ? c[0] : c.pid), tab.name);
+    addNotification({ type: 'success', title: 'Executed', message: `"${tab.name}" executed` });
+  }, [tabs, clients, addNotification]);
+
+  const handleExecuteAll = useCallback(async () => {
+    const attached = clients.filter(c => (Array.isArray(c) ? c[3] : c.status) === 3);
+    if (attached.length === 0) { addNotification({ type: 'warning', title: 'Not Attached', message: 'Attach to Roblox first' }); return; }
+    const pids = attached.map(c => Array.isArray(c) ? c[0] : c.pid);
+    for (const tab of tabs) await window.electronAPI?.execute?.(tab.content, pids, tab.name);
+    addNotification({ type: 'success', title: 'Executed All', message: `${tabs.length} script(s) executed` });
+  }, [tabs, clients, addNotification]);
+
+  const handleNewTabAI = useCallback(() => {
+    handleNewTab();
+    setActiveView('executor');
+    addNotification({ type: 'success', title: 'New Tab', message: 'New script tab created' });
+  }, [addNotification]);
+
+  const handleCloseTabByName = useCallback((tabName) => {
+    const needle = tabName.trim().toLowerCase();
+    const tab = tabs.find(t => t.name.toLowerCase() === needle) || tabs.find(t => t.name.toLowerCase().includes(needle));
+    if (!tab) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
+    handleCloseTab(tab.id);
+    addNotification({ type: 'info', title: 'Tab Closed', message: `"${tab.name}" closed` });
+  }, [tabs, addNotification]);
+
+  const handleDuplicateTab = useCallback((tabName) => {
+    const needle = tabName.trim().toLowerCase();
+    const tab = tabs.find(t => t.name.toLowerCase() === needle) || tabs.find(t => t.name.toLowerCase().includes(needle));
+    if (!tab) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
+    handleNewTab({ name: `${tab.name} (copy)`, content: tab.content });
+    setActiveView('executor');
+    addNotification({ type: 'success', title: 'Duplicated', message: `"${tab.name}" duplicated` });
+  }, [tabs, addNotification]);
+
+  const handleSaveScript = useCallback(async (tabName) => {
+    const needle = tabName.trim().toLowerCase();
+    const tab = tabs.find(t => t.name.toLowerCase() === needle) || tabs.find(t => t.name.toLowerCase().includes(needle));
+    if (!tab) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
+    await window.electronAPI?.saveScript?.(tab.name, '', tab.content);
+    addNotification({ type: 'success', title: 'Script Saved', message: `"${tab.name}" saved to library` });
+  }, [tabs, addNotification]);
+
   const handleLoadScript = (scriptContent) => {
     const newTab = {
       id: tabCounter.current++,
@@ -454,6 +677,13 @@ function AppContent() {
 
   const renderView = () => {
     switch (activeView) {
+      case 'collab':
+        return (
+          <CollabView
+            onStartCollab={(session) => startCollabSession(session)}
+            onNotify={addNotification}
+          />
+        );
       case 'dashboard':
         return (
           <Dashboard 
@@ -478,6 +708,10 @@ function AppContent() {
             onUpdateTabScan={handleUpdateTabScan}
             onNotify={addNotification}
             clients={clients}
+            remoteWrite={remoteWrite}
+            remoteCursors={remoteCursors}
+            collabTabId={collabTabIdRef.current}
+            onSendCursor={handleSendCursor}
           />
         );
       case 'scripthub':
@@ -490,15 +724,32 @@ function AppContent() {
             tabs={tabs} 
             onNewTab={handleNewTab}
             onSwitchToExecutor={() => setActiveView('executor')}
+            onStartTutorial={() => setTutorialActive(true)}
+            onNotify={addNotification}
           />
         );
       case 'assistant':
         return (
           <Assistant 
             tabs={tabs}
+            clients={clients}
             onWriteToTab={handleWriteToTab}
             onSwitchToExecutor={handleSwitchToExecutor}
             onNotify={addNotification}
+            onNavigate={setActiveView}
+            onNavigateToTab={handleNavigateToTab}
+            onApplySettings={handleApplySettings}
+            onRobloxAction={handleRobloxAction}
+            onScanTab={handleScanTab}
+            onAddToAutoExec={handleAddToAutoExec}
+            onSavePreset={handleSavePreset}
+            onExecuteTab={handleExecuteTab}
+            onExecuteAll={handleExecuteAll}
+            onNewTab={handleNewTabAI}
+            onCloseTabByName={handleCloseTabByName}
+            onDuplicateTab={handleDuplicateTab}
+            onSaveScript={handleSaveScript}
+            onStartTutorial={() => setTutorialActive(true)}
           />
         );
       default:
@@ -514,6 +765,10 @@ function AppContent() {
             onUpdateTabScan={handleUpdateTabScan}
             onNotify={addNotification}
             clients={clients}
+            remoteWrite={remoteWrite}
+            remoteCursors={remoteCursors}
+            collabTabId={collabTabIdRef.current}
+            onSendCursor={handleSendCursor}
           />
         );
     }
@@ -571,6 +826,16 @@ function AppContent() {
               onScanTab={handleScanTab}
               onRobloxAction={handleRobloxAction}
               onLoadScript={handleLoadScript}
+              scanFeedback={scanFeedback}
+              onAddToAutoExec={handleAddToAutoExec}
+              onSavePreset={handleSavePreset}
+              onExecuteTab={handleExecuteTab}
+              onExecuteAll={handleExecuteAll}
+              onNewTab={handleNewTabAI}
+              onCloseTabByName={handleCloseTabByName}
+              onDuplicateTab={handleDuplicateTab}
+              onSaveScript={handleSaveScript}
+              onStartTutorial={() => setTutorialActive(true)}
             />
             </motion.aside>
             )}
@@ -593,6 +858,15 @@ function AppContent() {
 
       {/* Notifications */}
       <Notification notifications={notifications} onRemove={removeNotification} />
+
+      {/* Tutorial overlay */}
+      <TutorialOverlay
+        active={tutorialActive}
+        onClose={handleTutorialClose}
+        onNavigate={setActiveView}
+        clients={clients}
+        onRobloxAction={handleRobloxAction}
+      />
     </>
   );
 }

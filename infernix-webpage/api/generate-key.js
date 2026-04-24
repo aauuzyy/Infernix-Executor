@@ -5,9 +5,27 @@
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// Simple in-memory rate limit: max 3 keys per IP per hour
-const ipCounts = new Map();
-setInterval(() => ipCounts.clear(), 60 * 60 * 1000);
+// Rate limit: 1 key per IP per 24 hours (in-memory, resets on cold start)
+// Stores { count, firstAt } per IP.
+const ipRecords = new Map();
+const WINDOW_MS  = 24 * 60 * 60 * 1000; // 24 hours
+const MAX_KEYS   = 1;
+
+function checkRateLimit(ip) {
+  const now  = Date.now();
+  const rec  = ipRecords.get(ip);
+  if (!rec || now - rec.firstAt >= WINDOW_MS) {
+    ipRecords.set(ip, { count: 1, firstAt: now });
+    return null; // allowed
+  }
+  if (rec.count >= MAX_KEYS) {
+    const retryAfterMs = WINDOW_MS - (now - rec.firstAt);
+    const h = Math.ceil(retryAfterMs / 3600000);
+    return `You can only generate 1 key per 24 hours. Try again in ${h}h.`;
+  }
+  rec.count++;
+  return null;
+}
 
 function generateKey() {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -25,9 +43,8 @@ async function handler(req, res) {
 
   // Rate limiting
   const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
-  const count = (ipCounts.get(ip) || 0) + 1;
-  if (count > 3) return res.status(429).json({ error: 'Too many keys generated. Try again in an hour.' });
-  ipCounts.set(ip, count);
+  const rateLimitError = checkRateLimit(ip);
+  if (rateLimitError) return res.status(429).json({ error: rateLimitError });
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return res.status(500).json({ error: 'Key system not configured yet.' });
