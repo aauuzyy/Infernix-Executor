@@ -17,7 +17,7 @@ import { StaggerContainer, StaggerItem, BlurIn } from '../components/Animations'
 
 const changelog = [
   {
-    version: '1.3.3',
+    version: '1.3.6',
     date: 'April 18, 2026',
     changes: [
       'Xeno DLL updated for latest Roblox version',
@@ -186,7 +186,7 @@ export default function Home() {
           >
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
-              v1.3.3
+              v1.3.6
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-white/30" />

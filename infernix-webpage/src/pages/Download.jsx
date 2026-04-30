@@ -31,7 +31,7 @@ const features = [
 
 const changelog = [
   {
-    version: '1.3.3',
+    version: '1.3.6',
     date: 'April 18, 2026',
     type: 'release',
     changes: [
@@ -164,7 +164,7 @@ export default function Download() {
                 <Flame className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Infernix v1.3.3</h2>
+                <h2 className="text-2xl font-bold text-white">Infernix v1.3.6</h2>
                 <p className="text-gray-500 text-sm">April 18, 2026 — Latest Release</p>
               </div>
             </div>
@@ -211,7 +211,7 @@ export default function Download() {
           {/* Latest Updates */}
           <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
             <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-              What's New in v1.3.3
+              What's New in v1.3.6
             </h3>
             <div className="space-y-2">
               {changelog[0].changes.slice(0, 5).map((change, index) => (
