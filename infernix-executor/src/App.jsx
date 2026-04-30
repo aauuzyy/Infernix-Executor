@@ -61,13 +61,13 @@ import LoadingScreen from './components/LoadingScreen';
 import KeyGate, { hasSavedKey } from './components/KeyGate';
 import TutorialOverlay from './components/TutorialOverlay';
 import CollabView from './components/CollabView';
-import { revalidateStoredSession, subscribeToSession, pushContent, clearStoredSession, openCursorChannel } from './services/collabService';
+import { revalidateStoredSession, subscribeToSession, pushContent, fetchSessionSnapshot, clearStoredSession, openCursorChannel } from './services/collabService';
 import './App.css';
 
 function AppContent() {
   const [activeView, setActiveView] = useState('dashboard');
   const [clients, setClients] = useState([]);
-  const [executorVersion, setExecutorVersion] = useState('1.3.5');
+  const [executorVersion, setExecutorVersion] = useState('1.3.6');
   const [executionCount, setExecutionCount] = useState(0);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -83,12 +83,22 @@ function AppContent() {
   const collabTabIdRef = useRef(null); // tab id of the Collaborate tab
   const collabUnsub = useRef(null);    // Realtime unsubscribe fn
   const collabPushTimer = useRef(null);
+  const collabPollRef = useRef(null);
+  const collabLastPushAtRef = useRef(0);
+  const collabPendingContentRef = useRef(null);
+  const collabPushErrorAtRef = useRef(0);
+  const collabLastLocalEditAtRef = useRef(0);
+  const lastRemoteContentRef = useRef('');
+  const lastPushedContentRef = useRef('');
   const collabCursorChannel = useRef(null); // Broadcast channel for cursor positions
   // remoteWrite: signals EditorView to push content directly into the Monaco model
   const [remoteWrite, setRemoteWrite] = useState(null); // { tabId, content, seq }
   const remoteWriteSeq = useRef(0);
   // remoteCursors: map of userId -> { lineNumber, column }
   const [remoteCursors, setRemoteCursors] = useState({});
+  const collabSessionRef = useRef(null);
+  useEffect(() => { collabSessionRef.current = collabSession; }, [collabSession]);
+  const lastCursorSendRef = useRef(0);
 
   // On app startup: check for a stored session and restore it if both sides are online
   useEffect(() => {
@@ -102,39 +112,77 @@ function AppContent() {
   }, []); // eslint-disable-line
 
   const startCollabSession = (session) => {
-    // Close any old Collaborate tab
-    if (collabTabIdRef.current !== null) {
-      setTabs(prev => prev.filter(t => t.id !== collabTabIdRef.current));
+    if (collabSession?.sessionId === session.sessionId && collabTabIdRef.current !== null) {
+      setActiveView('executor');
+      setActiveTab(collabTabIdRef.current);
+      return;
     }
-    // Create new Collaborate tab
-    const collabId = tabCounter.current++;
-    collabTabIdRef.current = collabId;
-    setTabs(prev => [...prev, { id: collabId, name: 'Collaborate', content: session.content || '', isCollab: true }]);
-    setActiveTab(collabId);
+
+    let nextCollabId;
+    // Keep exactly one Collaborate tab to prevent duplicates.
+    setTabs(prev => {
+      const existingCollab = prev.find(t => t.isCollab);
+      nextCollabId = existingCollab?.id ?? tabCounter.current++;
+      const withoutCollab = prev.filter(t => !t.isCollab);
+      return [...withoutCollab, { id: nextCollabId, name: 'Collaborate', content: session.content || '', isCollab: true }];
+    });
+
+    collabTabIdRef.current = nextCollabId;
+    setActiveTab(nextCollabId);
     setActiveView('executor');
     setCollabSession({ sessionId: session.sessionId, expiresAt: session.expiresAt, role: session.role });
+    lastRemoteContentRef.current = session.content || '';
+
+    const applyRemoteContent = (remoteContent) => {
+      if (typeof remoteContent !== 'string') return;
+      if (remoteContent === lastRemoteContentRef.current) return;
+      // Echo suppression: ignore our own push coming back from Supabase
+      if (remoteContent === lastPushedContentRef.current && Date.now() - collabLastPushAtRef.current < 600) return;
+      // Don't overwrite tabs state while user is actively typing (prevents clobbering on tab switch)
+      if (Date.now() - collabLastLocalEditAtRef.current < 600) return;
+      lastRemoteContentRef.current = remoteContent;
+      setTabs(prev => prev.map(t =>
+        t.id === collabTabIdRef.current ? { ...t, content: remoteContent } : t
+      ));
+      setRemoteWrite({ tabId: collabTabIdRef.current, content: remoteContent, seq: ++remoteWriteSeq.current });
+    };
 
     // Subscribe to Realtime content updates
     if (collabUnsub.current) collabUnsub.current();
     collabUnsub.current = subscribeToSession(
       session.sessionId,
-      (remoteContent) => {
-        // Update React tab state
-        setTabs(prev => prev.map(t =>
-          t.id === collabTabIdRef.current ? { ...t, content: remoteContent } : t
-        ));
-        // Also push directly into Monaco model via remoteWrite signal
-        setRemoteWrite({ tabId: collabTabIdRef.current, content: remoteContent, seq: ++remoteWriteSeq.current });
-      },
+      (remoteContent) => applyRemoteContent(remoteContent),
       () => {
         addNotification({ type: 'warning', title: 'Collaborate', message: 'Session expired. Generate a new friend code.' });
         endCollabSession();
+      },
+      (status) => {
+        if (status === 'CHANNEL_ERROR') {
+          addNotification({ type: 'warning', title: 'Collaborate', message: 'Realtime channel issue detected. Fallback sync is active.' });
+        }
       }
     );
 
-    // Open cursor broadcast channel
+    // Polling fallback: keep content in sync even if Realtime fails.
+    if (collabPollRef.current) clearInterval(collabPollRef.current);
+    collabPollRef.current = setInterval(async () => {
+      try {
+        const snap = await fetchSessionSnapshot(session.sessionId);
+        if (!snap) return;
+        if (new Date(snap.expires_at) < new Date()) {
+          addNotification({ type: 'warning', title: 'Collaborate', message: 'Session expired. Generate a new friend code.' });
+          endCollabSession();
+          return;
+        }
+        applyRemoteContent(snap.content ?? '');
+      } catch {
+        // Keep trying silently; realtime may still be working.
+      }
+    }, 200);
+
+    // Open cursor presence channel
     if (collabCursorChannel.current) collabCursorChannel.current.close();
-    collabCursorChannel.current = openCursorChannel(session.sessionId, ({ userId, lineNumber, column }) => {
+    collabCursorChannel.current = openCursorChannel(session.sessionId, session.role, ({ userId, lineNumber, column }) => {
       setRemoteCursors(prev => ({ ...prev, [userId]: { lineNumber, column } }));
     });
 
@@ -143,30 +191,70 @@ function AppContent() {
 
   const endCollabSession = () => {
     if (collabUnsub.current) { collabUnsub.current(); collabUnsub.current = null; }
+    if (collabPollRef.current) { clearInterval(collabPollRef.current); collabPollRef.current = null; }
     if (collabCursorChannel.current) { collabCursorChannel.current.close(); collabCursorChannel.current = null; }
     if (collabTabIdRef.current !== null) {
       setTabs(prev => prev.filter(t => t.id !== collabTabIdRef.current));
       collabTabIdRef.current = null;
     }
+    clearTimeout(collabPushTimer.current);
+    collabPushTimer.current = null;
+    collabPendingContentRef.current = null;
+    collabLastPushAtRef.current = 0;
+    collabLastLocalEditAtRef.current = 0;
     setCollabSession(null);
     setRemoteCursors({});
+    lastRemoteContentRef.current = '';
     clearStoredSession();
   };
 
-  // When the Collaborate tab content changes, push to Supabase (debounced 600ms)
+  // When the Collaborate tab content changes, push to Supabase (throttled for live typing)
   const handleCollabCodeChange = (tabId, content) => {
-    if (tabId !== collabTabIdRef.current || !collabSession) return;
-    clearTimeout(collabPushTimer.current);
-    collabPushTimer.current = setTimeout(() => {
-      pushContent(collabSession.sessionId, content).catch(() => {});
-    }, 600);
+    if (tabId !== collabTabIdRef.current || !collabSessionRef.current) return;
+    collabLastLocalEditAtRef.current = Date.now();
+    collabPendingContentRef.current = content;
+
+    const PUSH_INTERVAL_MS = 60;
+    const pushNow = (payload) => {
+      if (typeof payload !== 'string') return;
+      collabLastPushAtRef.current = Date.now();
+      lastPushedContentRef.current = payload;
+      pushContent(collabSessionRef.current.sessionId, payload).catch(() => {
+        const now = Date.now();
+        if (now - collabPushErrorAtRef.current > 4000) {
+          collabPushErrorAtRef.current = now;
+          addNotification({ type: 'warning', title: 'Collaborate', message: 'Failed to push latest content. Retrying...' });
+        }
+      });
+    };
+
+    const elapsed = Date.now() - collabLastPushAtRef.current;
+    if (elapsed >= PUSH_INTERVAL_MS && !collabPushTimer.current) {
+      const payload = collabPendingContentRef.current;
+      collabPendingContentRef.current = null;
+      pushNow(payload);
+      return;
+    }
+
+    if (!collabPushTimer.current) {
+      const wait = Math.max(15, PUSH_INTERVAL_MS - elapsed);
+      collabPushTimer.current = setTimeout(() => {
+        collabPushTimer.current = null;
+        const payload = collabPendingContentRef.current;
+        collabPendingContentRef.current = null;
+        pushNow(payload);
+      }, wait);
+    }
   };
 
   // Broadcast local cursor position to partner
   const handleSendCursor = (lineNumber, column) => {
-    if (!collabSession || !collabCursorChannel.current) return;
-    const userId = collabSession.role; // 'host' or 'guest'
-    collabCursorChannel.current.send(userId, lineNumber, column);
+    if (!collabSessionRef.current || !collabCursorChannel.current) return;
+    if (activeTab !== collabTabIdRef.current) return;
+    const now = Date.now();
+    if (now - lastCursorSendRef.current < 60) return;
+    lastCursorSendRef.current = now;
+    collabCursorChannel.current.send(lineNumber, column);
   };
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -238,7 +326,7 @@ function AppContent() {
         const ver =
           (await window.electronAPI.getCurrentVersion?.()) ||
           (await window.electronAPI.getVersion?.()) ||
-          '1.3.5';
+          '1.3.6';
         setExecutorVersion(String(ver).replace(/^v/, ''));
       })();
     }
@@ -413,7 +501,7 @@ function AppContent() {
   };
 
   const handleCodeChange = (tabId, content) => {
-    setTabs(tabs.map(t =>
+    setTabs(prev => prev.map(t =>
       t.id === tabId ? { ...t, content } : t
     ));
     // Push to Supabase if this is the collab tab
