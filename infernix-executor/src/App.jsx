@@ -1,6 +1,31 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+
+
+// Fuzzy tab name matcher — scores candidates so AI near-matches work
+function findTabByName(tabs, query) {
+  const needle = (query || '').trim().toLowerCase();
+  if (!needle) return null;
+  if (needle === 'all') return { all: true };
+  let best = null;
+  let bestScore = -1;
+  for (const tab of tabs) {
+    const name = tab.name.toLowerCase();
+    if (name === needle) return tab; // exact match — immediate return
+    let score = 0;
+    if (name.startsWith(needle)) score += 50;
+    if (name.includes(needle)) score += 30;
+    // word-level matching: each word in query must appear in tab name
+    const qWords = needle.split(/\s+/).filter(Boolean);
+    const nWords = name.split(/\s+/).filter(Boolean);
+    const matchedWords = qWords.filter(qw => nWords.some(nw => nw.includes(qw) || nw === qw));
+    score += matchedWords.length * 10;
+    if (score > bestScore) { bestScore = score; best = tab; }
+  }
+  // Require a minimum score threshold so random strings don't match
+  return bestScore >= 10 ? best : null;
+}
 
 function BackgroundOverlay() {
   const { customBackground, backgroundBlur } = useTheme();
@@ -58,16 +83,223 @@ import AssistantSidebar from './components/AssistantSidebar';
 import Notification from './components/Notification';
 import UpdateModal from './components/UpdateModal';
 import LoadingScreen from './components/LoadingScreen';
-import KeyGate, { hasSavedKey } from './components/KeyGate';
+import KeyGate, { hasSavedKey, isPremium } from './components/KeyGate';
 import TutorialOverlay from './components/TutorialOverlay';
 import CollabView from './components/CollabView';
 import { revalidateStoredSession, subscribeToSession, pushContent, fetchSessionSnapshot, clearStoredSession, openCursorChannel } from './services/collabService';
+import { loadStats, recordAttach, recordExecution, recordAI, recordSessionStart, recordSessionEnd } from './utils/stats';
 import './App.css';
 
-function AppContent() {
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, info: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error('[Infernix] UI Error Boundary:', error, info);
+    this.setState({ error, info });
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="err-overlay">
+          {/* Grid background */}
+          <div className="err-grid" />
+          {/* Ambient glows */}
+          <div className="err-glow" />
+          <div className="err-glow err-glow-2" />
+          {/* Floating particles */}
+          <div className="err-particles" aria-hidden="true">
+            {Array.from({ length: 16 }).map((_, i) => (
+              <div key={i} className={`err-particle err-particle-${i}`} />
+            ))}
+          </div>
+
+          <div className="err-content">
+            {/* Brand icon */}
+            <div className="err-brand-icon">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+              </svg>
+            </div>
+            <h1 className="err-title">Something went wrong</h1>
+            <p className="err-desc">
+              Infernix ran into an unexpected issue. Don't worry — your scripts and settings are safe.
+            </p>
+            {this.state.error && (
+              <div style={{
+                margin: '0 0 20px', padding: '10px 14px', borderRadius: 8,
+                background: 'var(--bg-tertiary)', border: '1px solid var(--border)',
+                fontSize: 11, color: 'var(--text-muted)', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                textAlign: 'left', maxWidth: '100%', overflow: 'auto', maxHeight: 120,
+                lineHeight: 1.5,
+              }}>
+                <strong style={{ color: '#f87171' }}>{this.state.error.name}:</strong> {this.state.error.message}
+              </div>
+            )}
+            <div className="err-actions">
+              <button className="err-btn err-btn-primary" onClick={() => window.location.reload()}>
+                Reload Infernix
+              </button>
+              <button className="err-btn err-btn-ghost" onClick={() => window.electronAPI?.closeWindow?.()}>
+                Close App
+              </button>
+            </div>
+            <p className="err-footer">
+              If this keeps happening, try restarting the app or checking for updates.
+            </p>
+          </div>
+
+          <style>{`
+            .err-overlay {
+              position: fixed; inset: 0; z-index: 99999;
+              background: var(--bg-primary);
+              color: var(--text-primary);
+              display: flex; align-items: center; justify-content: center;
+              font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+              overflow: hidden;
+            }
+            .err-grid {
+              position: absolute; inset: 0; pointer-events: none;
+              background-image:
+                linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+              background-size: 48px 48px;
+            }
+            .err-glow {
+              position: absolute; top: 30%; left: 20%;
+              width: 600px; height: 600px; border-radius: 50%;
+              background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+              pointer-events: none;
+              animation: err-pulse 6s ease-in-out infinite;
+            }
+            .err-glow-2 { top: 60%; left: 60%; width: 400px; height: 400px;
+              background: radial-gradient(circle, rgba(255,255,255,0.02) 0%, transparent 70%);
+              animation-delay: 3s;
+            }
+            @keyframes err-pulse {
+              0%, 100% { opacity: 0.6; transform: scale(1); }
+              50%       { opacity: 1;   transform: scale(1.08); }
+            }
+            .err-particles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+            .err-particle { position: absolute; border-radius: 50%; animation: err-float linear infinite; }
+            .err-particle-0  { left:  8%; top: 20%; width: 3px; height: 3px; background: rgba(255,255,255,0.75); box-shadow: 0 0 6px 3px rgba(255,255,255,0.35); animation-duration: 12s; animation-delay:  0s;   }
+            .err-particle-1  { left: 25%; top: 70%; width: 2px; height: 2px; background: rgba(255,255,255,0.50); box-shadow: 0 0 5px 2px rgba(255,255,255,0.25); animation-duration:  9s; animation-delay:  1.5s; }
+            .err-particle-2  { left: 50%; top: 15%; width: 4px; height: 4px; background: rgba(255,255,255,0.65); box-shadow: 0 0 8px 4px rgba(255,255,255,0.30); animation-duration: 15s; animation-delay:  0.5s; animation-name: err-float-drift; }
+            .err-particle-3  { left: 72%; top: 80%; width: 2px; height: 2px; background: rgba(255,255,255,0.50); box-shadow: 0 0 5px 2px rgba(255,255,255,0.25); animation-duration: 11s; animation-delay:  3s;   }
+            .err-particle-4  { left: 88%; top: 40%; width: 3px; height: 3px; background: rgba(255,255,255,0.70); box-shadow: 0 0 6px 3px rgba(255,255,255,0.35); animation-duration:  8s; animation-delay:  2s;   animation-name: err-float-drift; }
+            .err-particle-5  { left: 15%; top: 55%; width: 2px; height: 2px; background: rgba(255,255,255,0.50); box-shadow: 0 0 5px 2px rgba(255,255,255,0.22); animation-duration: 13s; animation-delay:  4s;   }
+            .err-particle-6  { left: 60%; top: 55%; width: 3px; height: 3px; background: rgba(255,255,255,0.65); box-shadow: 0 0 7px 3px rgba(255,255,255,0.30); animation-duration: 10s; animation-delay:  1s;   }
+            .err-particle-7  { left: 40%; top: 90%; width: 2px; height: 2px; background: rgba(255,255,255,0.50); box-shadow: 0 0 5px 2px rgba(255,255,255,0.25); animation-duration: 14s; animation-delay:  2.5s; animation-name: err-float-drift; }
+            .err-particle-8  { left: 33%; top: 35%; width: 3px; height: 3px; background: rgba(255,255,255,0.70); box-shadow: 0 0 7px 3px rgba(255,255,255,0.35); animation-duration: 11s; animation-delay:  0.8s; }
+            .err-particle-9  { left: 78%; top: 22%; width: 2px; height: 2px; background: rgba(255,255,255,0.50); box-shadow: 0 0 5px 2px rgba(255,255,255,0.25); animation-duration: 16s; animation-delay:  3.2s; animation-name: err-float-drift; }
+            .err-particle-10 { left:  5%; top: 75%; width: 3px; height: 3px; background: rgba(255,255,255,0.65); box-shadow: 0 0 7px 3px rgba(255,255,255,0.30); animation-duration:  9s; animation-delay:  1.8s; }
+            .err-particle-11 { left: 55%; top: 45%; width: 2px; height: 2px; background: rgba(255,255,255,0.50); box-shadow: 0 0 5px 2px rgba(255,255,255,0.22); animation-duration: 12s; animation-delay:  5s;   animation-name: err-float-drift; }
+            .err-particle-12 { left: 20%; top: 10%; width: 5px; height: 5px; background: rgba(255,255,255,0.25); box-shadow: 0 0 14px 7px rgba(255,255,255,0.14); animation-duration: 18s; animation-delay:  0s;   }
+            .err-particle-13 { left: 80%; top: 65%; width: 5px; height: 5px; background: rgba(255,255,255,0.22); box-shadow: 0 0 16px 8px rgba(255,255,255,0.12); animation-duration: 20s; animation-delay:  2s;   animation-name: err-float-drift; }
+            .err-particle-14 { left: 45%; top: 60%; width: 4px; height: 4px; background: rgba(255,255,255,0.28); box-shadow: 0 0 12px 6px rgba(255,255,255,0.14); animation-duration: 14s; animation-delay:  6s;   }
+            .err-particle-15 { left: 65%; top: 10%; width: 4px; height: 4px; background: rgba(255,255,255,0.28); box-shadow: 0 0 10px 5px rgba(255,255,255,0.14); animation-duration: 10s; animation-delay:  3.5s; animation-name: err-float-drift; }
+            @keyframes err-float {
+              0%   { transform: translateY(0);     opacity: 0.9; }
+              25%  { transform: translateY(-28px); opacity: 0.5; }
+              50%  { transform: translateY(-55px); opacity: 0.9; }
+              75%  { transform: translateY(-28px); opacity: 0.4; }
+              100% { transform: translateY(0);     opacity: 0.9; }
+            }
+            @keyframes err-float-drift {
+              0%   { transform: translate(0, 0);          opacity: 0.8; }
+              25%  { transform: translate(12px, -30px);   opacity: 0.4; }
+              50%  { transform: translate(-8px, -55px);   opacity: 0.8; }
+              75%  { transform: translate(10px, -25px);   opacity: 0.4; }
+              100% { transform: translate(0, 0);          opacity: 0.8; }
+            }
+            .err-content {
+              position: relative; z-index: 1;
+              display: flex; flex-direction: column; align-items: center; text-align: center;
+              max-width: 440px; padding: 0 24px;
+              animation: err-fadeup 0.55s cubic-bezier(0.22,1,0.36,1) forwards;
+            }
+            @keyframes err-fadeup {
+              from { opacity: 0; transform: translateY(20px); }
+              to   { opacity: 1; transform: translateY(0); }
+            }
+            .err-brand-icon {
+              width: 64px; height: 64px; border-radius: 50%;
+              background: var(--bg-secondary);
+              border: 1px solid var(--border);
+              display: flex; align-items: center; justify-content: center;
+              margin-bottom: 24px;
+              box-shadow: 0 0 32px rgba(var(--accent-rgb), 0.15);
+              color: var(--accent);
+            }
+            .err-title {
+              margin: 0 0 8px;
+              font-size: 22px; font-weight: 700;
+              letter-spacing: -0.02em;
+              color: var(--text-primary);
+            }
+            .err-desc {
+              margin: 0 0 28px;
+              font-size: 14px; line-height: 1.6;
+              color: var(--text-muted);
+            }
+            .err-actions {
+              display: flex; gap: 12;
+            }
+            .err-btn {
+              padding: 11px 26px; border-radius: 999px;
+              font-size: 13px; font-weight: 600;
+              cursor: pointer; transition: all 0.2s ease;
+              border: none;
+              font-family: inherit;
+              letter-spacing: 0.01em;
+              display: flex; align-items: center; gap: 8px;
+            }
+            .err-btn-primary {
+              background: var(--accent);
+              color: var(--bg-primary);
+              box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.25), 0 4px 12px rgba(0,0,0,0.2);
+            }
+            .err-btn-primary:hover {
+              transform: translateY(-1px);
+              box-shadow: 0 0 28px rgba(var(--accent-rgb), 0.4), 0 6px 16px rgba(0,0,0,0.25);
+              filter: brightness(1.1);
+            }
+            .err-btn-primary:active {
+              transform: translateY(0);
+            }
+            .err-btn-ghost {
+              background: transparent;
+              color: var(--text-secondary);
+              border: 1.5px solid var(--border);
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .err-btn-ghost:hover {
+              color: var(--text-primary);
+              border-color: var(--accent);
+              box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.15);
+            }
+            .err-footer {
+              margin-top: 20px;
+              font-size: 11px;
+              color: var(--text-muted);
+              opacity: 0.5;
+            }
+          `}</style>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function AppContent({ isPremium }) {
   const [activeView, setActiveView] = useState('dashboard');
   const [clients, setClients] = useState([]);
-  const [executorVersion, setExecutorVersion] = useState('1.3.6');
+  const [executorVersion, setExecutorVersion] = useState('1.3.8');
   const [executionCount, setExecutionCount] = useState(0);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
@@ -76,6 +308,7 @@ function AppContent() {
   const [startTime] = useState(Date.now());
   const [scanFeedback, setScanFeedback] = useState(null);
   const [tutorialActive, setTutorialActive] = useState(false);
+  const [stats, setStats] = useState(() => loadStats());
 
   // ── Collab state ──────────────────────────────────────────────────────────
   // collabSession: null | { sessionId, expiresAt, role } when a session is active
@@ -100,16 +333,35 @@ function AppContent() {
   useEffect(() => { collabSessionRef.current = collabSession; }, [collabSession]);
   const lastCursorSendRef = useRef(0);
 
-  // On app startup: check for a stored session and restore it if both sides are online
+  // On app startup: clean up expired collab sessions, but NEVER auto-reopen the tab.
+  // The collab tab should only open when the user explicitly clicks Collaborate.
   useEffect(() => {
     (async () => {
+      const stored = JSON.parse(localStorage.getItem('infernix_collab_session') || 'null');
+      if (!stored) return;
+      // Fast client-side expiry check before hitting Supabase
+      if (stored.expiresAt && new Date(stored.expiresAt) < new Date()) {
+        clearStoredSession();
+        return;
+      }
+      // Re-validate against Supabase and clear if truly expired/missing
       const session = await revalidateStoredSession();
       if (!session) return;
-      // Only auto-reopen when both host and guest are registered
-      if (!session.partnerOnline) return;
-      startCollabSession(session);
+      // DO NOT call startCollabSession here — the tab only opens when the user
+      // explicitly clicks the Collaborate button. Otherwise the tab reopens on
+      // every launch even when the other user is offline.
     })();
   }, []); // eslint-disable-line
+
+  // Stats: record session start on mount, session end on unmount
+  useEffect(() => {
+    setStats(prev => recordSessionStart(prev));
+    return () => {
+      const uptime = Date.now() - startTime;
+      setStats(prev => recordSessionEnd(prev, uptime));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startCollabSession = (session) => {
     if (collabSession?.sessionId === session.sessionId && collabTabIdRef.current !== null) {
@@ -137,9 +389,9 @@ function AppContent() {
       if (typeof remoteContent !== 'string') return;
       if (remoteContent === lastRemoteContentRef.current) return;
       // Echo suppression: ignore our own push coming back from Supabase
-      if (remoteContent === lastPushedContentRef.current && Date.now() - collabLastPushAtRef.current < 600) return;
+      if (remoteContent === lastPushedContentRef.current && Date.now() - collabLastPushAtRef.current < 300) return;
       // Don't overwrite tabs state while user is actively typing (prevents clobbering on tab switch)
-      if (Date.now() - collabLastLocalEditAtRef.current < 600) return;
+      if (Date.now() - collabLastLocalEditAtRef.current < 150) return;
       lastRemoteContentRef.current = remoteContent;
       setTabs(prev => prev.map(t =>
         t.id === collabTabIdRef.current ? { ...t, content: remoteContent } : t
@@ -252,7 +504,8 @@ function AppContent() {
     if (!collabSessionRef.current || !collabCursorChannel.current) return;
     if (activeTab !== collabTabIdRef.current) return;
     const now = Date.now();
-    if (now - lastCursorSendRef.current < 60) return;
+    // Throttle to 100ms to stay within Supabase Realtime eventsPerSecond: 10
+    if (now - lastCursorSendRef.current < 100) return;
     lastCursorSendRef.current = now;
     collabCursorChannel.current.send(lineNumber, column);
   };
@@ -326,7 +579,7 @@ function AppContent() {
         const ver =
           (await window.electronAPI.getCurrentVersion?.()) ||
           (await window.electronAPI.getVersion?.()) ||
-          '1.3.6';
+          '1.3.7';
         setExecutorVersion(String(ver).replace(/^v/, ''));
       })();
     }
@@ -530,10 +783,8 @@ function AppContent() {
   // Navigate to executor and switch to a tab by name (case-insensitive, partial match)
   const handleNavigateToTab = (tabName) => {
     setActiveView('executor');
-    const needle = tabName.trim().toLowerCase();
-    const match = tabs.find(t => t.name.toLowerCase() === needle)
-      || tabs.find(t => t.name.toLowerCase().includes(needle));
-    if (match) setActiveTab(match.id);
+    const match = findTabByName(tabs, tabName);
+    if (match && !match.all) setActiveTab(match.id);
   };
 
   // Apply settings/theme changes from the AI assistant
@@ -566,7 +817,7 @@ function AppContent() {
     if (patch.accentColor) setAccentColor(patch.accentColor);
     if (patch.colorShift !== undefined) setColorShift(patch.colorShift);
     // Boolean settings — persist via electronAPI
-    const settingsKeys = ['autoAttach','autoExecute','closeRoblox','topmost','ansEnabled','ansAutoShutdown','absEnabled','absAutoShutdown','debugConsole'];
+    const settingsKeys = ['autoAttach','autoExecute','closeRoblox','debugConsole','topmost'];
     const settingsPatch = {};
     for (const k of settingsKeys) {
       if (patch[k] !== undefined) settingsPatch[k] = patch[k];
@@ -576,13 +827,16 @@ function AppContent() {
         window.electronAPI?.saveSettings?.({ ...current, ...settingsPatch });
       });
     }
+    // Apply always-on-top immediately
+    if (patch.topmost !== undefined) {
+      window.electronAPI?.setAlwaysOnTop?.(patch.topmost);
+    }
     addNotification?.({ type: 'success', title: 'Settings Updated', message: 'Settings applied by AI' });
   }, [setThemeMode, setAccentColor, setColorShift]);
 
   const handleScanTab = useCallback(async (tabName) => {
-    const needle = tabName.trim().toLowerCase();
-    const tab = tabs.find(t => t.name.toLowerCase() === needle) || tabs.find(t => t.name.toLowerCase().includes(needle));
-    if (!tab) {
+    const tab = findTabByName(tabs, tabName);
+    if (!tab || tab.all) {
       addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` });
       return;
     }
@@ -652,22 +906,32 @@ function AppContent() {
         addNotification({ type: 'info', title: 'Closing', message: 'Closing Infernix...' });
         setTimeout(() => window.electronAPI?.quitApp?.(), 1200);
         break;
-      case 'attach':
-        await window.electronAPI?.attach?.();
-        addNotification({ type: 'success', title: 'Attached', message: 'Attached to Roblox' });
+      case 'attach': {
+        const t0 = performance.now();
+        try {
+          const result = await window.electronAPI?.attach?.();
+          const elapsed = Math.round(performance.now() - t0);
+          setStats(prev => recordAttach(prev, !!result?.ok, elapsed));
+          addNotification({ type: 'success', title: 'Attached', message: 'Attached to Roblox' });
+        } catch (e) {
+          const elapsed = Math.round(performance.now() - t0);
+          setStats(prev => recordAttach(prev, false, elapsed));
+          addNotification({ type: 'error', title: 'Attach Error', message: e.message });
+        }
         break;
+      }
     }
   }, [addNotification]);
 
   const handleAddToAutoExec = useCallback(async (tabName) => {
-    const needle = (tabName || '').trim().toLowerCase();
+    const result = findTabByName(tabs, tabName);
     let matchTabs;
-    if (needle === 'all') {
+    if (result?.all) {
       matchTabs = tabs;
+    } else if (result) {
+      matchTabs = [result];
     } else {
-      const found = tabs.find(t => t.name.toLowerCase() === needle)
-        || tabs.find(t => t.name.toLowerCase().includes(needle));
-      matchTabs = found ? [found] : [];
+      matchTabs = [];
     }
     if (matchTabs.length === 0) {
       addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` });
@@ -699,20 +963,72 @@ function AppContent() {
   }, [themeMode, accentColor, addNotification]);
 
   const handleExecuteTab = useCallback(async (tabName) => {
-    const needle = tabName.trim().toLowerCase();
-    const tab = tabs.find(t => t.name.toLowerCase() === needle) || tabs.find(t => t.name.toLowerCase().includes(needle));
-    if (!tab) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
+    window.electronAPI?.logToMain?.('log', '[handleExecuteTab] called with:', tabName);
+    addNotification({ type: 'info', title: 'Execute', message: `Looking for tab "${tabName}"...` });
+    const tab = findTabByName(tabs, tabName);
+    if (!tab || tab.all) {
+      addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` });
+      window.electronAPI?.logToMain?.('error', '[handleExecuteTab] Tab not found:', tabName);
+      return;
+    }
+    window.electronAPI?.logToMain?.('log', '[handleExecuteTab] Found tab:', tab.name);
     const attached = clients.filter(c => (Array.isArray(c) ? c[3] : c.status) === 3);
-    if (attached.length === 0) { addNotification({ type: 'warning', title: 'Not Attached', message: 'Attach to Roblox first' }); return; }
-    await window.electronAPI?.execute?.(tab.content, attached.map(c => Array.isArray(c) ? c[0] : c.pid), tab.name);
-    addNotification({ type: 'success', title: 'Executed', message: `"${tab.name}" executed` });
-  }, [tabs, clients, addNotification]);
+    window.electronAPI?.logToMain?.('log', '[handleExecuteTab] Attached clients:', attached.length);
+    if (attached.length === 0) {
+      addNotification({ type: 'warning', title: 'Not Attached', message: 'Attach to Roblox first' });
+      window.electronAPI?.logToMain?.('warn', '[handleExecuteTab] No attached clients');
+      return;
+    }
+    const pids = attached.map(c => String(Array.isArray(c) ? c[0] : c.pid));
+    const t0 = performance.now();
+    let ok = false;
+    try {
+      window.electronAPI?.logToMain?.('log', '[handleExecuteTab] Calling IPC execute...');
+      const result = await window.electronAPI?.execute?.(tab.content, pids, tab.name);
+      window.electronAPI?.logToMain?.('log', '[handleExecuteTab] IPC result:', result);
+      if (result?.ok) { ok = true; }
+      else {
+        throw new Error(result?.error || 'IPC returned not ok');
+      }
+    } catch (ipcErr) {
+      window.electronAPI?.logToMain?.('warn', '[handleExecuteTab] IPC failed:', ipcErr.message);
+      try {
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', 'http://localhost:3110/o', true);
+          xhr.setRequestHeader('Content-Type', 'text/plain');
+          xhr.setRequestHeader('clients', JSON.stringify(pids));
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve();
+            else reject(new Error(`HTTP ${xhr.status}`));
+          };
+          xhr.onerror = () => reject(new Error('HTTP request failed'));
+          xhr.send(tab.content);
+        });
+        ok = true;
+        window.electronAPI?.logToMain?.('log', '[handleExecuteTab] HTTP fallback succeeded');
+        try { await window.electronAPI?.recordExecution?.(tab.name, tab.content); } catch (_) {}
+      } catch (httpErr) {
+        window.electronAPI?.logToMain?.('error', '[handleExecuteTab] HTTP fallback failed:', httpErr.message);
+        addNotification({ type: 'error', title: 'Execution Failed', message: httpErr.message });
+        return;
+      }
+    }
+    const elapsed = Math.round(performance.now() - t0);
+    setStats(prev => recordExecution(prev, elapsed));
+    if (ok) addNotification({ type: 'success', title: 'Executed', message: `"${tab.name}" executed` });
+  }, [tabs, clients, addNotification, setStats]);
 
   const handleExecuteAll = useCallback(async () => {
     const attached = clients.filter(c => (Array.isArray(c) ? c[3] : c.status) === 3);
     if (attached.length === 0) { addNotification({ type: 'warning', title: 'Not Attached', message: 'Attach to Roblox first' }); return; }
     const pids = attached.map(c => Array.isArray(c) ? c[0] : c.pid);
-    for (const tab of tabs) await window.electronAPI?.execute?.(tab.content, pids, tab.name);
+    const t0 = performance.now();
+    for (const tab of tabs) {
+      try { await window.electronAPI?.execute?.(tab.content, pids, tab.name); } catch (_) {}
+    }
+    const elapsed = Math.round(performance.now() - t0);
+    setStats(prev => recordExecution(prev, elapsed));
     addNotification({ type: 'success', title: 'Executed All', message: `${tabs.length} script(s) executed` });
   }, [tabs, clients, addNotification]);
 
@@ -723,26 +1039,23 @@ function AppContent() {
   }, [addNotification]);
 
   const handleCloseTabByName = useCallback((tabName) => {
-    const needle = tabName.trim().toLowerCase();
-    const tab = tabs.find(t => t.name.toLowerCase() === needle) || tabs.find(t => t.name.toLowerCase().includes(needle));
-    if (!tab) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
+    const tab = findTabByName(tabs, tabName);
+    if (!tab || tab.all) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
     handleCloseTab(tab.id);
     addNotification({ type: 'info', title: 'Tab Closed', message: `"${tab.name}" closed` });
   }, [tabs, addNotification]);
 
   const handleDuplicateTab = useCallback((tabName) => {
-    const needle = tabName.trim().toLowerCase();
-    const tab = tabs.find(t => t.name.toLowerCase() === needle) || tabs.find(t => t.name.toLowerCase().includes(needle));
-    if (!tab) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
+    const tab = findTabByName(tabs, tabName);
+    if (!tab || tab.all) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
     handleNewTab({ name: `${tab.name} (copy)`, content: tab.content });
     setActiveView('executor');
     addNotification({ type: 'success', title: 'Duplicated', message: `"${tab.name}" duplicated` });
   }, [tabs, addNotification]);
 
   const handleSaveScript = useCallback(async (tabName) => {
-    const needle = tabName.trim().toLowerCase();
-    const tab = tabs.find(t => t.name.toLowerCase() === needle) || tabs.find(t => t.name.toLowerCase().includes(needle));
-    if (!tab) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
+    const tab = findTabByName(tabs, tabName);
+    if (!tab || tab.all) { addNotification({ type: 'error', title: 'Tab Not Found', message: `No tab named "${tabName}"` }); return; }
     await window.electronAPI?.saveScript?.(tab.name, '', tab.content);
     addNotification({ type: 'success', title: 'Script Saved', message: `"${tab.name}" saved to library` });
   }, [tabs, addNotification]);
@@ -781,6 +1094,7 @@ function AppContent() {
             startTime={startTime}
             onViewChange={setActiveView}
             executorVersion={executorVersion}
+            stats={stats}
           />
         );
       case 'executor':
@@ -800,12 +1114,14 @@ function AppContent() {
             remoteCursors={remoteCursors}
             collabTabId={collabTabIdRef.current}
             onSendCursor={handleSendCursor}
+            stats={stats}
+            onRecordExecution={(timeMs) => setStats(prev => recordExecution(prev, timeMs))}
           />
         );
       case 'scripthub':
         return <ScriptHub onLoadScript={handleLoadScript} clients={clients} />;
       case 'clients':
-        return <ClientManager clients={clients} onNotify={addNotification} />;
+        return <ClientManager clients={clients} onNotify={addNotification} stats={stats} onAttach={() => handleRobloxAction('attach')} />;
       case 'settings':
         return (
           <SettingsView 
@@ -838,6 +1154,9 @@ function AppContent() {
             onDuplicateTab={handleDuplicateTab}
             onSaveScript={handleSaveScript}
             onStartTutorial={() => setTutorialActive(true)}
+            stats={stats}
+            onRecordAI={(timeMs) => setStats(prev => recordAI(prev, timeMs))}
+            isPremium={isPremium}
           />
         );
       default:
@@ -924,6 +1243,9 @@ function AppContent() {
               onDuplicateTab={handleDuplicateTab}
               onSaveScript={handleSaveScript}
               onStartTutorial={() => setTutorialActive(true)}
+              stats={stats}
+              isPremium={isPremium}
+              onRecordAI={(timeMs) => setStats(prev => recordAI(prev, timeMs))}
             />
             </motion.aside>
             )}
@@ -962,18 +1284,24 @@ function AppContent() {
 function App() {
   const [ready, setReady] = useState(false);   // loading screen done
   const [keyed, setKeyed] = useState(false);    // key validated
+  const [premium, setPremium] = useState(isPremium());
 
   // After loading finishes, check for a saved valid key
-  const handleLoadingDone = () => {
+  const handleLoadingDone = useCallback(() => {
     setReady(true);
-    if (hasSavedKey()) setKeyed(true);
-  };
+    if (hasSavedKey()) {
+      setKeyed(true);
+      setPremium(isPremium());
+    }
+  }, []);
 
   if (!ready) return <LoadingScreen onDone={handleLoadingDone} />;
   if (!keyed) return <KeyGate onUnlocked={() => setKeyed(true)} />;
   return (
     <ThemeProvider>
-      <AppContent />
+      <ErrorBoundary>
+        <AppContent isPremium={premium} />
+      </ErrorBoundary>
     </ThemeProvider>
   );
 }
