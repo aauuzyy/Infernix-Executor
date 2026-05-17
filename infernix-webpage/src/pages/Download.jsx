@@ -164,8 +164,8 @@ export default function Download() {
                 <Flame className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Infernix v1.3.8</h2>
-                <p className="text-gray-500 text-sm">April 30, 2026 — Latest Release</p>
+                <h2 className="text-2xl font-bold text-white">Infernix v1.3.9</h2>
+                <p className="text-gray-500 text-sm">May 1, 2026 — Latest Release</p>
               </div>
             </div>
 

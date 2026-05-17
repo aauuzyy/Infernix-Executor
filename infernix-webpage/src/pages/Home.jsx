@@ -186,7 +186,7 @@ export default function Home() {
           >
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
-              v1.3.8
+              v1.3.9
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
