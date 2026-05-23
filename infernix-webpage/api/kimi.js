@@ -1,4 +1,4 @@
-const KIMI_URL = 'https://api.kimi.com/coding/v1/chat/completions';
+const KIMI_URL = 'https://api.moonshot.cn/v1/chat/completions';
 
 async function handler(req, res) {
   // CORS preflight
@@ -29,7 +29,12 @@ async function handler(req, res) {
         'Content-Type': 'application/json',
         'Authorization': auth,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        model: body.model || 'kimi-k2.6',
+        messages: body.messages,
+        max_tokens: body.max_tokens,
+        stream: body.stream || false,
+      }),
     });
 
     const data = await kimiRes.json();
