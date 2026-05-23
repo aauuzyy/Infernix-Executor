@@ -1,7 +1,8 @@
 {
   "alias": ["infernix.vercel.app"],
   "functions": {
-    "api/chat.js": { "maxDuration": 60 }
+    "api/chat.js": { "maxDuration": 60 },
+    "api/kimi.js": { "maxDuration": 30 }
   },
   "routes": [
     { "handle": "filesystem" },
