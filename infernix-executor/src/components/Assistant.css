@@ -1,0 +1,330 @@
+﻿.assistant {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  overflow: hidden;
+}
+
+.assistant-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.assistant-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.assistant-info h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.assistant-info p {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.assistant-tips {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.tip-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.tip-title svg {
+  color: var(--text-secondary);
+}
+
+.tip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tip-tag {
+  padding: 4px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  transition: all 0.15s;
+  cursor: pointer;
+}
+
+.tip-tag:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.tip-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.assistant-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: all 0.3s;
+}
+
+.status-indicator.active {
+  background: #22c55e;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.status-indicator.error {
+  background: var(--danger);
+}
+
+.cancel-btn {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+
+.cancel-btn:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.assistant-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: var(--danger);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.assistant-input-area {
+  margin-top: auto;
+  padding-top: 16px;
+}
+
+.input-wrapper {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.input-wrapper:focus-within {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.input-wrapper input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  padding: 8px;
+}
+
+.input-wrapper input::placeholder {
+  color: var(--text-muted);
+}
+
+.input-wrapper input:disabled {
+  opacity: 0.6;
+}
+
+.send-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Assistant Lock Screen ──────────────────────────────────────────── */
+.assistant.assistant-locked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.assistant-lock-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 340px;
+  text-align: center;
+  padding: 32px;
+}
+
+.al-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  border: 2px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.25);
+  transition: all 0.4s;
+}
+
+.al-icon-wrap.al-unlocking {
+  border-color: rgba(0,212,255,0.7);
+  color: #00d4ff;
+  box-shadow: 0 0 30px rgba(0,212,255,0.4);
+  animation: alIconPulse 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes alIconPulse {
+  from { box-shadow: 0 0 12px rgba(0,212,255,0.25); }
+  to   { box-shadow: 0 0 36px rgba(0,212,255,0.6); }
+}
+
+.al-unlock-anim {
+  animation: alUnlockSpin 0.5s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes alUnlockSpin {
+  from { transform: scale(0.7) rotate(-20deg); opacity:0; }
+  to   { transform: scale(1)   rotate(0deg);   opacity:1; }
+}
+
+.al-shield {
+  color: rgba(255,255,255,0.2);
+}
+
+.al-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.45);
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.al-sub {
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.25);
+  margin: 0;
+  white-space: pre-line;
+}
+
+.al-progress-wrap {
+  width: 200px;
+  height: 3px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.al-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #00d4ff, #39ff14);
+  border-radius: 2px;
+  animation: alBarFill 1.8s cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes alBarFill {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+.al-locked-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  padding: 5px 12px;
+  color: rgba(255,255,255,0.25);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+

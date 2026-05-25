@@ -81,7 +81,7 @@ import SettingsView from './components/SettingsView';
 import Assistant from './components/Assistant';
 import AssistantSidebar from './components/AssistantSidebar';
 import Notification from './components/Notification';
-import UpdateModal from './components/UpdateModal';
+
 import LoadingScreen from './components/LoadingScreen';
 import KeyGate, { hasSavedKey, isPremium } from './components/KeyGate';
 import TutorialOverlay from './components/TutorialOverlay';
@@ -301,9 +301,7 @@ function AppContent({ isPremium }) {
   const [clients, setClients] = useState([]);
   const [executorVersion, setExecutorVersion] = useState('1.4.0');
   const [executionCount, setExecutionCount] = useState(0);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
-  const [updateInfo, setUpdateInfo] = useState(null);
-  const [isBlockingUpdate, setIsBlockingUpdate] = useState(false);
+
   const { setThemeMode, setAccentColor, setColorShift, accentPresets, themeMode, accentColor } = useTheme();
   const [startTime] = useState(Date.now());
   const [scanFeedback, setScanFeedback] = useState(null);
@@ -615,28 +613,6 @@ function AppContent({ isPremium }) {
     });
     window.electronAPI?.setRPCState?.(hasAttached ? 'attached' : 'idle');
   }, [clients]);
-
-  // Auto-check for updates on startup
-  useEffect(() => {
-    const checkForUpdates = async () => {
-      if (window.electronAPI?.checkUpdates) {
-        try {
-          const result = await window.electronAPI.checkUpdates();
-          if (result.hasUpdate) {
-            setUpdateInfo(result);
-            setShowUpdateModal(true);
-            setIsBlockingUpdate(true); // Block app usage until updated
-          }
-        } catch (e) {
-          console.error('Update check failed:', e);
-        }
-      }
-    };
-    
-    // Check after a short delay to let the app initialize
-    const timer = setTimeout(checkForUpdates, 1500);
-    return () => clearTimeout(timer);
-  }, []);
 
   // Live execution count — incremented when main process broadcasts a successful execution
   useEffect(() => {
@@ -1251,19 +1227,7 @@ function AppContent({ isPremium }) {
             )}
           </AnimatePresence>
         </div>
-        {/* Update Modal - blocking when outdated */}
-        {showUpdateModal && (
-          <UpdateModal
-            isOpen={showUpdateModal}
-            onClose={() => {
-              if (!isBlockingUpdate) {
-                setShowUpdateModal(false);
-              }
-            }}
-            updateInfo={updateInfo}
-            isBlocking={isBlockingUpdate}
-          />
-        )}
+
       </div>
 
       {/* Notifications */}

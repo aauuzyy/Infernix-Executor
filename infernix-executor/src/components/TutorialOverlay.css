@@ -1,0 +1,314 @@
+/* ============================================================
+   TUTORIAL OVERLAY
+   ============================================================ */
+
+/* Root wrapper — sits above everything */
+.tut-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  pointer-events: none;
+}
+
+/* Transparent click-blocker — stops app interaction */
+.tut-click-block {
+  position: absolute;
+  inset: 0;
+  z-index: 9997;
+  pointer-events: all;
+  cursor: default;
+}
+
+/* ── Skip button ─────────────────────────────────────────── */
+.tut-skip {
+  position: fixed;
+  top: 52px;
+  left: 16px;
+  z-index: 10002;
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(20, 20, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.tut-skip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ── Step badge ──────────────────────────────────────────── */
+.tut-step-badge {
+  position: fixed;
+  top: 52px;
+  right: 16px;
+  z-index: 10002;
+  pointer-events: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: rgba(20, 20, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.30);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* ── Popup card ──────────────────────────────────────────── */
+.tut-popup {
+  pointer-events: all;
+  background: rgba(10, 10, 10, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow:
+    0 32px 80px rgba(0, 0, 0, 0.85),
+    0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.tut-popup-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.tut-popup-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tut-popup-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  background: linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.70) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Body text ───────────────────────────────────────────── */
+.tut-popup-body {
+  min-height: 68px;
+  margin-bottom: 20px;
+}
+
+.tut-popup-text {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.62);
+  font-weight: 400;
+}
+
+/* Blinking cursor during typing */
+.tut-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 1px;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: tut-blink 0.7s step-end infinite;
+}
+
+@keyframes tut-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ── Progress dots ───────────────────────────────────────── */
+.tut-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.tut-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.tut-dot.done {
+  background: rgba(255, 255, 255, 0.25);
+  width: 6px;
+  height: 6px;
+}
+
+.tut-dot.active {
+  background: #ffffff;
+  width: 20px;
+  border-radius: 3px;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.45);
+}
+
+/* ── Actions ─────────────────────────────────────────────── */
+.tut-popup-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Back button */
+.tut-btn-back {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  color: rgba(255, 255, 255, 0.35);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.tut-btn-back:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Next button */
+.tut-btn-next {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 22px;
+  border-radius: 10px;
+  background: #ffffff;
+  border: none;
+  color: #000000;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  letter-spacing: -0.01em;
+}
+.tut-btn-next:hover {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+/* Finish variant */
+.tut-btn-next.finish {
+  background: linear-gradient(135deg, #ffffff 0%, #cccccc 100%);
+  padding: 9px 24px;
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.15);
+}
+.tut-btn-next.finish:hover {
+  background: linear-gradient(135deg, #f0f0f0 0%, #b8b8b8 100%);
+}
+
+/* ── Accent color overrides ──────────────────────────────── */
+body[data-accent] .tut-dot.active {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+body[data-accent] .tut-btn-next {
+  background: var(--accent);
+  color: var(--bg-primary);
+}
+
+body[data-accent] .tut-btn-next.finish {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+}
+
+body[data-accent] .tut-popup-title {
+  background: var(--fire-gradient-text);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Interactive status badges ───────────────────────────── */
+.tut-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.tut-status-ok {
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+  color: #34d399;
+}
+
+.tut-status-warn {
+  background: rgba(251, 191, 36, 0.10);
+  border: 1px solid rgba(251, 191, 36, 0.22);
+  color: #fbbf24;
+}
+
+/* ── Interactive action button (Try Attach, etc.) ─────────── */
+.tut-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  background: rgba(167, 139, 250, 0.14);
+  border: 1px solid rgba(167, 139, 250, 0.30);
+  color: #a78bfa;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  pointer-events: all;
+  transition: background 0.15s, border-color 0.15s;
+  letter-spacing: -0.01em;
+}
+.tut-action-btn:hover {
+  background: rgba(167, 139, 250, 0.24);
+  border-color: rgba(167, 139, 250, 0.45);
+}
+.tut-action-btn.tried {
+  background: rgba(167, 139, 250, 0.08);
+  color: rgba(167, 139, 250, 0.65);
+}

@@ -1,0 +1,421 @@
+.collab-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 760px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Header ── */
+.collab-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.collab-header-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent, #ffffff);
+  flex-shrink: 0;
+}
+.collab-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 3px;
+  line-height: 1.2;
+}
+.collab-subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.35);
+  margin: 0;
+}
+
+/* ── Tab switcher ── */
+.collab-tabs {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 4px;
+  width: fit-content;
+}
+.collab-tab-btn {
+  padding: 7px 18px;
+  border-radius: 7px;
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+.collab-tab-btn:hover { color: rgba(255,255,255,0.7); }
+.collab-tab-btn.active {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+/* ── Card ── */
+.collab-card {
+  position: relative;
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,0.09);
+  background: linear-gradient(145deg, rgba(255,255,255,0.06) 0%, transparent 100%);
+  padding: 1px;
+}
+.collab-card-inner {
+  background: #080808;
+  border-radius: 17px;
+  overflow: hidden;
+}
+.collab-panel {
+  position: relative;
+  z-index: 1;
+  padding: 36px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  justify-content: center;
+}
+
+/* ── Panel contents ── */
+.collab-panel-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.5);
+}
+.collab-panel-desc {
+  font-size: 13.5px;
+  color: rgba(255,255,255,0.45);
+  text-align: center;
+  max-width: 400px;
+  line-height: 1.6;
+  margin: 0;
+}
+.collab-panel-desc strong { color: rgba(255,255,255,0.7); }
+.collab-panel-desc-sm {
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.35);
+  text-align: center;
+  max-width: 380px;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.collab-feature-list {
+  list-style: none;
+  padding: 0; margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+.collab-feature-list li {
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+}
+
+.collab-cooldown {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: rgba(234, 179, 8, 0.07);
+  border: 1px solid rgba(234, 179, 8, 0.18);
+  border-radius: 8px;
+  font-size: 12.5px;
+  color: rgba(234, 179, 8, 0.7);
+}
+.collab-cooldown strong { color: rgba(234, 179, 8, 0.9); }
+
+/* ── Primary button ── */
+.collab-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  border-radius: 10px;
+  background: #fff;
+  color: #000;
+  font-size: 13.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s, opacity 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.collab-primary-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.collab-primary-btn:not(:disabled):hover { background: rgba(255,255,255,0.9); }
+
+.collab-ghost-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255,255,255,0.3);
+  font-size: 12.5px;
+  border: 1px solid rgba(255,255,255,0.07);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.collab-ghost-btn:hover { color: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.15); }
+
+/* ── Spinner ring ── */
+.collab-spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+}
+.collab-ring-outer {
+  position: relative;
+  width: 64px;
+  height: 64px;
+}
+.collab-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+.ring-a {
+  border-top-color: #fff;
+  border-right-color: rgba(255,255,255,0.1);
+  border-bottom-color: rgba(255,255,255,0.1);
+  border-left-color: rgba(255,255,255,0.1);
+}
+.ring-b {
+  inset: 8px;
+  border-top-color: rgba(255,255,255,0.1);
+  border-bottom-color: rgba(255,255,255,0.45);
+  border-left-color: rgba(255,255,255,0.1);
+  border-right-color: rgba(255,255,255,0.1);
+}
+.collab-ring-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.6);
+}
+.collab-spinner-label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.4);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Code box ── */
+.collab-code-box {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+}
+/* Glow removed — replaced with clean accent border */
+.collab-code-inner {
+  position: relative;
+  z-index: 1;
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: border-color 0.2s, background 0.2s;
+}
+.collab-code-box:hover .collab-code-inner {
+  border-color: rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.045);
+}
+.collab-code-text {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 17px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.08em;
+  flex: 1;
+  text-align: center;
+}
+.collab-copy-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+.collab-copy-btn:hover { background: rgba(255,255,255,0.12); }
+
+.collab-expiry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.25);
+  margin-top: 8px;
+}
+
+/* ── Waiting row ── */
+.collab-waiting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.35);
+}
+.collab-waiting-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent, #fff);
+  display: inline-block;
+}
+
+/* ── Success badge ── */
+.collab-success-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  font-size: 12px;
+  color: #4ade80;
+}
+
+/* ── Join input ── */
+.collab-input-wrap { width: 100%; max-width: 340px; }
+.collab-code-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.collab-code-input::placeholder { color: rgba(255,255,255,0.2); font-weight: 400; font-size: 14px; }
+.collab-code-input:focus { border-color: rgba(255,255,255,0.25); }
+
+/* ── Error ── */
+.collab-error-icon { color: rgba(239,68,68,0.7); }
+.collab-error-msg {
+  font-size: 13px;
+  color: rgba(239,68,68,0.8);
+  text-align: center;
+  max-width: 360px;
+}
+
+/* ── How it works ── */
+.collab-how {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.collab-how-title {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+  margin: 0;
+}
+.collab-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.collab-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 16px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+}
+.collab-step-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.09);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.35);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.collab-step-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.65);
+  margin: 0 0 3px;
+}
+.collab-step-desc {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Collab tab badge in editor tab bar ── */
+.tab-collab-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: var(--accent, #fff);
+  opacity: 0.75;
+  margin-left: 2px;
+}

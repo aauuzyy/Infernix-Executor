@@ -1,0 +1,197 @@
+/* TitleBar — matches website Navbar exactly */
+.titlebar {
+  height: 52px;
+  background: var(--bg-secondary);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 50;
+  -webkit-app-region: drag;
+  flex-shrink: 0;
+  padding: 0 8px 0 16px;
+  gap: 0;
+}
+
+/* Logo */
+.titlebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+  padding-right: 8px;
+}
+
+.logo-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+/* Drag spacers */
+.titlebar-drag {
+  flex: 1;
+  height: 100%;
+  -webkit-app-region: drag;
+}
+
+/* Nav links */
+.titlebar-nav {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  height: 100%;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+}
+
+.tb-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: color 0.15s;
+  white-space: nowrap;
+  height: 100%;
+}
+
+.tb-link:hover {
+  color: var(--text-secondary);
+}
+
+.tb-link.active {
+  color: var(--text-primary);
+}
+
+.tb-count {
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(var(--accent-rgb), 0.15);
+  color: rgba(var(--accent-rgb), 0.9);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  border-radius: 8px;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
+
+/* Right side */
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  -webkit-app-region: no-drag;
+  flex-shrink: 0;
+  padding-left: 8px;
+}
+
+/* Assistant toggle */
+.assistant-toggle {
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #888888;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.assistant-toggle:hover {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.assistant-toggle.open {
+  background: rgba(var(--accent-rgb), 0.08);
+  border-color: rgba(var(--accent-rgb), 0.3);
+  color: rgba(var(--accent-rgb), 0.9);
+}
+
+.assistant-toggle.open svg {
+  color: rgba(var(--accent-rgb), 1);
+}
+
+/* Discord button — solid indigo like website */
+.discord-btn {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #ffffff !important;
+  background: #5865F2;
+  border: none;
+  cursor: pointer;
+  text-decoration: none !important;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.discord-btn:hover {
+  background: #4752C4;
+  color: #ffffff !important;
+}
+
+/* Window controls */
+.titlebar-controls {
+  display: flex;
+  align-items: center;
+  margin-left: 4px;
+  border-left: 1px solid var(--border);
+  padding-left: 4px;
+}
+
+.control-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.control-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.control-close:hover {
+  background: rgba(239, 68, 68, 0.85);
+  color: white;
+}
