@@ -583,7 +583,7 @@ function MsgCtxMenu({ x, y, msg, onClose, onAIAction }) {
 const SUGGESTIONS = [
   "What features does Infernix have?",
   "Take me to the download page",
-  "What's new in v1.3.6?",
+  "What's new in v1.4.0?",
   "How do I use the AI assistant?",
 ];
 
