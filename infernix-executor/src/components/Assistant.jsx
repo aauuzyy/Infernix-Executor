@@ -295,10 +295,10 @@ export default function Assistant({
   const [pendingImages, setPendingImages] = useState([]);
   const fileInputRef = useRef(null);
   const [aiProvider, setAiProvider] = useState(() => {
-    try { return localStorage.getItem('infernix-ai-provider') || (isPremium ? 'kimi' : 'gemini'); } catch { return isPremium ? 'kimi' : 'gemini'; }
+    try { return localStorage.getItem('infernix-ai-provider') || (isPremium ? 'kimi' : 'groq'); } catch { return isPremium ? 'kimi' : 'groq'; }
   });
   const [aiModel, setAiModel] = useState(() => {
-    try { return localStorage.getItem('infernix-ai-model') || (isPremium ? 'kimi-k2-6' : 'gemini-2.5-flash'); } catch { return isPremium ? 'kimi-k2-6' : 'gemini-2.5-flash'; }
+    try { return localStorage.getItem('infernix-ai-model') || (isPremium ? 'kimi-k2-6' : 'llama-3.3-70b-versatile'); } catch { return isPremium ? 'kimi-k2-6' : 'llama-3.3-70b-versatile'; }
   });
   const bottomRef = useRef(null);
   const textRef = useRef(null);
@@ -1055,10 +1055,11 @@ export default function Assistant({
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
               <button onClick={() => fileInputRef.current?.click()} title="Attach image"
-                disabled={busy || aiProvider === 'kimi'}
-                style={{ width: 24, height: 24, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: (busy || aiProvider === 'kimi') ? 'var(--border)' : 'var(--text-muted)', background: 'none', border: 'none', cursor: (busy || aiProvider === 'kimi') ? 'default' : 'pointer', transition: 'color 0.15s' }}
-                onMouseEnter={e => { if (!busy && aiProvider !== 'kimi') e.currentTarget.style.color='var(--text-primary)'; }}
-                onMouseLeave={e => { if (!busy && aiProvider !== 'kimi') e.currentTarget.style.color='var(--text-muted)'; }}>
+                disabled={busy || aiProvider !== 'gemini'}
+                style={{ width: 24, height: 24, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: (busy || aiProvider !== 'gemini') ? 'var(--border)' : 'var(--text-muted)', background: 'none', border: 'none', cursor: (busy || aiProvider !== 'gemini') ? 'default' : 'pointer', transition: 'color 0.15s' }}
+                onMouseEnter={e => { if (!busy && aiProvider === 'gemini') e.currentTarget.style.color='var(--text-primary)'; }}
+                onMouseLeave={e => { if (!busy && aiProvider === 'gemini') e.currentTarget.style.color='var(--text-muted)'; }}
+              >
                 <ImageIcon size={12} />
               </button>
               <ModelPicker

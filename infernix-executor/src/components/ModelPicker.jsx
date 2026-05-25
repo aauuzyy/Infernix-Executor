@@ -3,8 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Lock, Zap, Sparkles } from 'lucide-react';
 
 const MODELS = [
-  { id: 'gemini', provider: 'gemini', model: 'gemini-2.5-flash', name: 'Gemini 2.5', desc: 'Fast & free', icon: Zap, requiresPremium: false },
-  { id: 'kimi',   provider: 'kimi',   model: 'kimi-k2-6',       name: 'Kimi K2.6', desc: 'Thinking & reasoning', icon: Sparkles, requiresPremium: true },
+  { id: 'groq',   provider: 'groq',   model: 'llama-3.3-70b-versatile', name: 'Groq Llama', desc: 'Fast & free', icon: Zap, requiresPremium: false },
+  { id: 'kimi',   provider: 'kimi',   model: 'kimi-k2-6',               name: 'Kimi K2.6',  desc: 'Thinking & reasoning', icon: Sparkles, requiresPremium: true },
+  { id: 'gemini', provider: 'gemini', model: 'gemini-2.5-flash',        name: 'Gemini 2.5', desc: 'Temporarily locked',   icon: Zap, requiresPremium: true, locked: true },
 ];
 
 export default function ModelPicker({ provider, onChange, isPremium }) {
@@ -62,7 +63,7 @@ export default function ModelPicker({ provider, onChange, isPremium }) {
           >
             {MODELS.map(m => {
               const Icon = m.icon;
-              const locked = m.requiresPremium && !isPremium;
+              const locked = (m.requiresPremium && !isPremium) || m.locked;
               const active = m.provider === current.provider;
               return (
                 <button
