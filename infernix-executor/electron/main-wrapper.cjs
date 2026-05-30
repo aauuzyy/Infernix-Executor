@@ -355,19 +355,34 @@ ipcMain.handle('validate-key', async (event, { key, supabaseUrl, supabaseAnonKey
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// AI GENERATION — Gemini 2.5 Flash + Kimi K2.6
+// AI GENERATION — Groq (default) + Kimi K2.6 (premium) + Gemini (locked)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const GEMINI_API_KEY = 'AIzaSyAPie1yJnK1E0PQJ_2B1UQEjppMk2Uplws';
+function loadEnvFile(filePath) {
+  try {
+    const text = fs.readFileSync(filePath, 'utf8');
+    const env = {};
+    for (const line of text.split(/\r?\n/)) {
+      const m = line.match(/^\s*([A-Za-z0-9_]+)\s*=\s*(.*?)\s*$/);
+      if (m) env[m[1]] = m[2];
+    }
+    return env;
+  } catch {
+    return {};
+  }
+}
+
+const AI_ENV = loadEnvFile(path.join(__dirname, '.env'));
+
+const GEMINI_API_KEY = AI_ENV.GEMINI_API_KEY || '';
 const GEMINI_MODEL   = 'gemini-2.5-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
-const KIMI_API_KEY  = 'sk-kimi-Ooj7Zmy3x7ZVjQLrfsHyW158bOD01FvttAfYeLh7ygLC0Imate90IJiVgOylRegS';
+const KIMI_API_KEY  = AI_ENV.KIMI_API_KEY || '';
 const KIMI_API_URL  = 'https://api.moonshot.cn/v1/chat/completions';
 const KIMI_MODEL    = 'kimi-k2-6';
 
-const GROQ_API_KEY  = process.env.GROQ_API_KEY || '';
-// NOTE: Set GROQ_API_KEY env var before running;
+const GROQ_API_KEY  = AI_ENV.GROQ_API_KEY || '';
 const GROQ_API_URL  = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL    = 'llama-3.3-70b-versatile';
 
