@@ -13,15 +13,16 @@ import PresetManager from './PresetManager';
 // Changelog data
 const CHANGELOG = [
   {
-    version: '1.4.0',
-    date: 'May 1 2026',
+    version: '1.4.1',
+    date: 'May 29 2026',
     changes: [
-      'Xeno DLL updated to v1.3.45 for latest Roblox support',
+      'Xeno DLL updated to v1.3.50 for latest Roblox support',
+      'Groq AI default — fast Llama 3.3 for all users',
+      'Gemini locked — API key rotation after security incident',
       'Premium Keys system — INFERNIX-PREMIUM-XXXX keys unlock permanent access',
       'Kimi K2.6 AI integration for premium users with live thinking UI',
-      'Gemini image upload support in AI Assistant',
       'Update checker on loading screen — detects new versions from website',
-      'AI model picker in Assistant tab and sidebar — switch between Kimi and Gemini',
+      'AI model picker in Assistant tab and sidebar — switch between Groq, Kimi and Gemini',
       'Renderer crash auto-reload and Error Boundary for blank screen fixes',
       'Bug fixes and stability improvements',
     ]
@@ -223,7 +224,7 @@ function SettingsView({ tabs, onNewTab, onSwitchToExecutor, onStartTutorial, onN
   const [killing, setKilling] = useState(false);
   const [updateInfo, setUpdateInfo] = useState(null);
   const [checkingUpdates, setCheckingUpdates] = useState(false);
-  const [currentVersion, setCurrentVersion] = useState('1.4.0');
+  const [currentVersion, setCurrentVersion] = useState('1.4.1');
 
   // Default to the new packaged version
   // (will be replaced by value returned from main process if available)

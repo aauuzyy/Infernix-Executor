@@ -27,7 +27,7 @@ export default function LoadingScreen({ onDone }) {
   const [progress, setProgress] = useState(0);
   const [label, setLabel] = useState('Booting');
   const [subLabel, setSubLabel] = useState('');
-  const [version, setVersion] = useState('1.4.0');
+  const [version, setVersion] = useState('1.4.1');
   const [realStats, setRealStats] = useState({
     scriptHubScripts: 0, workspaceFiles: 0, autoExecScripts: 0, presets: 0,
   });

@@ -208,7 +208,7 @@ export default function KeyGate({ onUnlocked }) {
             ))}
           </div>
 
-          <div className="kg-version-badge">v1.4.0 — Latest Release</div>
+          <div className="kg-version-badge">v1.4.1 — Latest Release</div>
         </div>
 
         {/* Right panel — key entry card */}

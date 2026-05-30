@@ -13,8 +13,10 @@ const FEATURES = [
 
 const CHANGELOG = [
   {
-    version: '1.4.0', date: 'May 1, 2026', latest: true,
+    version: '1.4.1', date: 'May 29, 2026', latest: true,
     items: [
+      'Xeno DLL updated to v1.3.50 for latest Roblox support',
+      'Groq AI default — Gemini locked due to leaked key',
       'Wider default window (1280×750) for more workspace',
       'AI sidebar no longer overlaps executor toolbar',
       'Staggered loading screen ring pulse animations',
@@ -38,8 +40,8 @@ const fadeUp = (delay = 0) => ({
   transition: { duration: 0.52, delay, ease: [0.22, 1, 0.36, 1] },
 });
 
-export default function Dashboard({ onViewChange, executorVersion = '1.4.0', clients = [], executionCount = 0, stats }) {
-  const versionStr = (executorVersion || '1.4.0').replace(/^v/, '');
+export default function Dashboard({ onViewChange, executorVersion = '1.4.1', clients = [], executionCount = 0, stats }) {
+  const versionStr = (executorVersion || '1.4.1').replace(/^v/, '');
 
   return (
     <div className="dash-page">

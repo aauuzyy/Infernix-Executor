@@ -31,16 +31,17 @@ const features = [
 
 const changelog = [
   {
-    version: '1.4.0',
+    version: '1.4.1',
     date: 'May 1, 2026',
     type: 'release',
     changes: [
-      'Xeno DLL updated to v1.3.45 for latest Roblox support',
+      'Xeno DLL updated to v1.3.50 for latest Roblox support',
+      'Groq AI default — fast Llama 3.3 for all users',
+      'Gemini locked — API key rotation after security incident',
       'Premium Keys system — permanent access with INFERNIX-PREMIUM-XXXX keys',
       'Kimi K2.6 AI integration for premium users with live thinking UI',
-      'Gemini image upload support in AI Assistant',
       'Update checker on loading screen — detects new versions from website',
-      'AI model picker — switch between Kimi and Gemini on the fly',
+      'AI model picker — switch between Groq, Kimi and Gemini',
       'Renderer crash auto-reload and Error Boundary improvements',
       'UI refinements and stability improvements',
     ],
@@ -179,8 +180,8 @@ export default function Download() {
                 <Flame className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-white">Infernix v1.4.0</h2>
-                <p className="text-gray-500 text-sm">May 1, 2026 — Latest Release</p>
+                <h2 className="text-2xl font-bold text-white">Infernix v1.4.1</h2>
+                <p className="text-gray-500 text-sm">May 29, 2026 — Latest Release</p>
               </div>
             </div>
 
@@ -226,7 +227,7 @@ export default function Download() {
           {/* Latest Updates */}
           <div className="p-5 rounded-2xl bg-white/5 border border-white/5">
             <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-              What's New in v1.4.0
+              What's New in v1.4.1
             </h3>
             <div className="space-y-2">
               {changelog[0].changes.slice(0, 5).map((change, index) => (

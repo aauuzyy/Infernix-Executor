@@ -12,7 +12,7 @@ import tempfile
 import glob
 
 SEVEN_ZIP = r"C:\Program Files\7-Zip\7z.exe"
-XENO_EXE  = r"D:\Xeno x Infernix\Xeno-v1.3.45.exe"
+XENO_EXE  = r"D:\Xeno x Infernix\Xeno-v1.3.50.exe"
 BIN_DIR   = r"D:\Xeno x Infernix\infernix-executor\bin"
 TARGET    = os.path.join(BIN_DIR, "Xeno.dll")
 

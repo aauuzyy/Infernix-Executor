@@ -299,7 +299,7 @@ class ErrorBoundary extends React.Component {
 function AppContent({ isPremium }) {
   const [activeView, setActiveView] = useState('dashboard');
   const [clients, setClients] = useState([]);
-  const [executorVersion, setExecutorVersion] = useState('1.4.0');
+  const [executorVersion, setExecutorVersion] = useState('1.4.1');
   const [executionCount, setExecutionCount] = useState(0);
 
   const { setThemeMode, setAccentColor, setColorShift, accentPresets, themeMode, accentColor } = useTheme();
@@ -577,7 +577,7 @@ function AppContent({ isPremium }) {
         const ver =
           (await window.electronAPI.getCurrentVersion?.()) ||
           (await window.electronAPI.getVersion?.()) ||
-          '1.4.0';
+          '1.4.1';
         setExecutorVersion(String(ver).replace(/^v/, ''));
       })();
     }

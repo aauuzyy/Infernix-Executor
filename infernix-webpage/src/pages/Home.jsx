@@ -17,15 +17,16 @@ import { StaggerContainer, StaggerItem, BlurIn } from '../components/Animations'
 
 const changelog = [
   {
-    version: '1.4.0',
+    version: '1.4.1',
     date: 'May 1, 2026',
     changes: [
-      'Xeno DLL updated to v1.3.45 for latest Roblox support',
+      'Xeno DLL updated to v1.3.50 for latest Roblox support',
+      'Groq AI default — fast Llama 3.3 for all users',
+      'Gemini locked — API key rotation after security incident',
       'Premium Keys system — permanent access with INFERNIX-PREMIUM-XXXX keys',
       'Kimi K2.6 AI integration for premium users with live thinking UI',
-      'Gemini image upload support in AI Assistant',
       'Update checker on loading screen — detects new versions from website',
-      'AI model picker — switch between Kimi and Gemini on the fly',
+      'AI model picker — switch between Groq, Kimi and Gemini',
       'Renderer crash auto-reload and Error Boundary improvements',
       'UI refinements and stability improvements',
     ]
@@ -200,7 +201,7 @@ export default function Home() {
           >
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
-              v1.4.0
+              v1.4.1
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-white/30" />
